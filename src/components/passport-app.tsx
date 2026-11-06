@@ -1,6 +1,6 @@
 "use client";
 
-import { toBlob } from "html-to-image";
+import { toCanvas } from "html-to-image";
 import { Camera, Check, Crown, EnvelopeSimple, EnvelopeSimpleOpen, Globe, Plus, X } from "@phosphor-icons/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { flushSync } from "react-dom";
@@ -28,6 +28,39 @@ function shuffle() {
     [ids[i], ids[j]] = [ids[j], ids[i]];
   }
   return [ids.slice(0, 4), ids.slice(4, 8), ids.slice(8, 12)];
+}
+
+// Safari y todos los navegadores de iPhone/iPad (WebKit) dibujan en blanco las imágenes que van dentro de la captura
+// en el primer intento. Se detecta para aplicar las dos medidas de exportPhoto/exportImage.
+const isWebKit = () =>
+  /iPad|iPhone|iPod/.test(navigator.userAgent) || /^((?!chrome|android|crios|fxios).)*safari/i.test(navigator.userAgent);
+
+/** Vuelve a pintar la foto encima de la captura, en su posición exacta, con el mismo recorte y giro que en pantalla. */
+async function paintPhoto(canvas: HTMLCanvasElement, card: HTMLElement, src: string) {
+  const box = card.querySelector<HTMLElement>(".photo-box");
+  const inner = card.querySelector<HTMLElement>(".passport-inner");
+  const ctx = canvas.getContext("2d");
+  if (!box || !inner || !ctx) return;
+  const photo = new window.Image();
+  photo.src = src;
+  await photo.decode();
+  // Posición en el lienzo del pasaporte (offsetLeft/Top ignoran la escala y el giro del recuadro).
+  const x = card.clientLeft + inner.offsetLeft + inner.clientLeft + box.offsetLeft + box.clientLeft;
+  const y = card.clientTop + inner.offsetTop + inner.clientTop + box.offsetTop + box.clientTop;
+  const w = box.clientWidth;
+  const h = box.clientHeight;
+  const ratio = canvas.width / PASSPORT_W;
+  ctx.save();
+  ctx.scale(ratio, ratio);
+  ctx.translate(x + w / 2, y + h / 2);
+  ctx.rotate((-1.5 * Math.PI) / 180); // mismo giro que .photo-box
+  ctx.beginPath();
+  if (ctx.roundRect) ctx.roundRect(-w / 2, -h / 2, w, h, 8);
+  else ctx.rect(-w / 2, -h / 2, w, h);
+  ctx.clip();
+  const scale = Math.max(w / photo.naturalWidth, h / photo.naturalHeight); // equivale a object-fit: cover
+  ctx.drawImage(photo, (-photo.naturalWidth * scale) / 2, (-photo.naturalHeight * scale) / 2, photo.naturalWidth * scale, photo.naturalHeight * scale);
+  ctx.restore();
 }
 
 function compress(file: File): Promise<string> {
@@ -175,12 +208,19 @@ export default function PassportApp() {
     try {
       await document.fonts.ready;
       await Promise.all(Array.from(node.querySelectorAll("img")).map((img) => img.decode().catch(() => undefined)));
-      // La copia que se captura va sin escala: sale a 750 × 1000 aunque en pantalla se vea más pequeña.
+      // La copia que se captura va sin escala: sale a 750 × 1500 aunque en pantalla se vea más pequeña.
       const options = { width: PASSPORT_W, height: PASSPORT_H, pixelRatio: 2, backgroundColor: theme.vars["--paper"], cacheBust: true, style: { transform: "none" } };
-      let blob = await toBlob(node, options);
+      const webkit = isWebKit();
+      // 1) WebKit: dos capturas pequeñas de calentamiento para que cargue la foto antes de la captura real.
+      if (webkit) for (let i = 0; i < 2; i++) await toCanvas(node, { ...options, pixelRatio: 0.5 }).catch(() => undefined);
+      const canvas = await toCanvas(node, options);
+      // 2) WebKit: si aun así la foto no salió, se pinta encima a mano (no depende del navegador).
+      if (webkit && photo) await paintPhoto(canvas, node, photo).catch(() => undefined);
+      const toPng = () => new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/png"));
+      let blob = await toPng();
       if (!blob) {
         await new Promise((r) => setTimeout(r, 150));
-        blob = await toBlob(node, options);
+        blob = await toPng();
       }
       if (!blob) throw new Error("capture");
       const out = new File([blob], "mi-pasaporte-del-cielo.png", { type: "image/png" });
@@ -445,7 +485,7 @@ export default function PassportApp() {
               <p>{stamp.declaration}</p>
               <blockquote>“{verse.text}”</blockquote>
               <strong>{stamp.reference} · {verse.version}</strong>
-              {verse.version === "NTV" && <small className="verse-credit">Nueva Traducción Viviente (NTV)</small>}
+              {verse.version === "NTV" && <small className="verse-credit">Nueva Traducción Viviente (NTV) © Tyndale House Foundation</small>}
               <div className="detail-actions">
                 {slots.includes(stamp.id) ? (
                   <>

@@ -19,10 +19,9 @@ Para compilar una versión de producción, ejecuta `pnpm build`; para servirla, 
 
 - `src/app`: rutas y estilos globales.
 - `src/components`: interfaz del editor del pasaporte.
-- `src/data`: contenido de los doce sellos y sus versículos.
+- `src/data`: contenido de los doce sellos y sus versículos (Nueva Traducción Viviente, © Tyndale House Foundation; la web muestra ese aviso junto a cada versículo).
 - `src/data/themes.ts`: paletas completas del pasaporte (borde, tinta, papel, líneas y acentos).
 - `src/data/badges.ts` y `src/components/badge-icon.tsx`: las imágenes de «Tus gustos» (hasta 2 por pasaporte).
-- `src/data/verses-ntv.ts`: texto de los versículos en la NTV; mientras un sello no tenga texto aquí se muestra en Reina-Valera 1960.
 - `pasaporte-specs.md`: especificaciones funcionales de la actividad.
 
 El pasaporte se dibuja en un lienzo fijo de 750 × 1500 px (constante `PASSPORT_H` en `passport-app.tsx`) que se escala a la pantalla, así la vista previa y la imagen exportada son idénticas.
