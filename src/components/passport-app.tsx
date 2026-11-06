@@ -213,14 +213,17 @@ export default function PassportApp() {
       const webkit = isWebKit();
       // 1) WebKit: dos capturas pequeñas de calentamiento para que cargue la foto antes de la captura real.
       if (webkit) for (let i = 0; i < 2; i++) await toCanvas(node, { ...options, pixelRatio: 0.5 }).catch(() => undefined);
-      const canvas = await toCanvas(node, options);
-      // 2) WebKit: si aun así la foto no salió, se pinta encima a mano (no depende del navegador).
-      if (webkit && photo) await paintPhoto(canvas, node, photo).catch(() => undefined);
-      const toPng = () => new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/png"));
-      let blob = await toPng();
+      const capture = async () => {
+        const canvas = await toCanvas(node, options);
+        // 2) WebKit: si aun así la foto no salió, se pinta encima a mano (no depende del navegador).
+        if (webkit && photo) await paintPhoto(canvas, node, photo).catch(() => undefined);
+        return new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/png"));
+      };
+      let blob = await capture();
       if (!blob) {
+        // Si falla, se repite la captura completa (no solo la conversión del mismo lienzo).
         await new Promise((r) => setTimeout(r, 150));
-        blob = await toPng();
+        blob = await capture();
       }
       if (!blob) throw new Error("capture");
       const out = new File([blob], "mi-pasaporte-del-cielo.png", { type: "image/png" });
@@ -485,7 +488,7 @@ export default function PassportApp() {
               <p>{stamp.declaration}</p>
               <blockquote>“{verse.text}”</blockquote>
               <strong>{stamp.reference} · {verse.version}</strong>
-              {verse.version === "NTV" && <small className="verse-credit">Nueva Traducción Viviente (NTV) © Tyndale House Foundation</small>}
+              <small className="verse-credit">Nueva Traducción Viviente © Tyndale House Foundation</small>
               <div className="detail-actions">
                 {slots.includes(stamp.id) ? (
                   <>
