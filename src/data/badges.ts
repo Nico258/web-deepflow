@@ -2,11 +2,18 @@
 // (uno debajo del planeta y otro debajo de la corona).
 
 export const badges = [
-  { id: "futbol", label: "Balón de fútbol" },
-  { id: "audifonos", label: "Audífonos" },
-  { id: "libro", label: "Libro" },
-  { id: "mancuerna", label: "Mancuerna" },
-  { id: "mando", label: "Mando de videojuegos" },
+  { id: "musica", label: "Música" },
+  { id: "cine", label: "Cine y series" },
+  { id: "deportes", label: "Deportes" },
+  { id: "gastronomia", label: "Gastronomía" },
+  { id: "viajes", label: "Viajes y aventuras" },
+  { id: "videojuegos", label: "Videojuegos" },
+  { id: "arte", label: "Arte y creatividad" },
+  { id: "cultura", label: "Cultura y lectura" },
+  { id: "naturaleza", label: "Naturaleza" },
+  { id: "moda", label: "Moda y estilo" },
+  { id: "animales", label: "Animales" },
+  { id: "tecnologia", label: "Tecnología" },
 ] as const;
 
 export type BadgeId = (typeof badges)[number]["id"];
