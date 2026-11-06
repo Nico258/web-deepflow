@@ -37,6 +37,7 @@ Crear una página web sencilla, visual e interactiva para que cada participante 
 - Mantener el estilo gráfico de la referencia y asegurar que el pasaporte exportado sea legible y conserve su distribución.
 - Compatibilidad con navegadores modernos.
 - Guardar el progreso localmente en el navegador del dispositivo, sin enviar datos ni fotos a una base de datos. Conservar el reparto aleatorio, sobres abiertos, personalización (incluidos color y «Tus gustos») y ubicación de los sellos entre sesiones. El almacenamiento local depende del navegador y del dispositivo, y puede borrarse si la persona limpia los datos del sitio; la descarga de la imagen es la forma de conservar una copia compartible.
+- Mostrar al final de la página un aviso breve y discreto que explique que todo se guarda solo en el dispositivo y en el navegador, que no se usan cookies y que no se envían datos a ningún servidor, y que la descarga de la imagen es la forma de conservar una copia. Si en una versión futura se añaden cuentas, sincronización, experiencias compartidas o analítica, este aviso deja de ser suficiente: habrá que definir una política de tratamiento de datos y la autorización correspondiente, con especial cuidado si participan menores de edad.
 
 ## 4. Funcionalidades opcionales
 

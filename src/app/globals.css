@@ -1,5 +1,5 @@
 @import "tailwindcss";
-:root{--navy:#173b5c;--sky:#5b91b8;--cream:#f5f0e4;--gold:#c69a4a;--teal:#8fb5a6;--rose:#d9a6a0;--line:#d9d4c8;--ink:#23364a;--muted:#617386}
+:root{--navy:#173b5c;--sky:#5b91b8;--gold:#c69a4a;--ink:#23364a;--muted:#617386}
 *{box-sizing:border-box}
 body{margin:0;background:#f8f7f2;color:var(--ink);font-family:var(--font-ui),sans-serif}
 button,input{font:inherit}
@@ -31,7 +31,7 @@ button:focus-visible,input:focus-visible{outline:3px solid #4d86b2;outline-offse
 .color-choice{width:38px;height:38px;border-radius:50%;border:3px solid white;box-shadow:0 0 0 1px #aab7bf;padding:0}
 .color-choice.active{box-shadow:0 0 0 3px var(--navy)}
 
-.photo-upload,.secondary-btn,.primary-btn{min-height:44px;padding:10px 16px;border-radius:8px;border:1px solid #b8c9d4;background:white;color:var(--navy);font-size:14px;font-weight:800}
+.secondary-btn,.primary-btn{min-height:44px;padding:10px 16px;border-radius:8px;border:1px solid #b8c9d4;background:white;color:var(--navy);font-size:14px;font-weight:800}
 .primary-btn{background:var(--navy);border-color:var(--navy);color:white}
 .secondary-btn{background:white;border-color:#aebfca}
 
@@ -43,7 +43,7 @@ button:focus-visible,input:focus-visible{outline:3px solid #4d86b2;outline-offse
 
 /* ───────── Pasaporte (lienzo de 750 px de ancho; alto y escala los define passport-app.tsx) ───────── */
 .passport-scale{width:100%;max-width:560px;margin:0 auto;position:relative}
-.passport{--accent:#173b5c;--ink:#173b5c;--soft:#45657c;--rule:#bdc9cc;--dash:#7891a3;--paper:#f5f0e4;--paper-alt:#f7f2e8;--glow-a:#bed6e58c;--glow-b:#eedba76e;--mark:#b9d4e2;--ornament:#c69a4a;--photo-a:#e8eff0;--photo-b:#f2ead8;--slot:#ffffff55;
+.passport{--accent:#173b5c;--ink:#173b5c;--soft:#45657c;--rule:#bdc9cc;--dash:#7891a3;--paper:#f5f0e4;--paper-alt:#f7f2e8;--glow-a:#bed6e58c;--glow-b:#eedba76e;--ornament:#c69a4a;--photo-a:#e8eff0;--photo-b:#f2ead8;--slot:#ffffff55;
   position:absolute;top:0;left:0;transform-origin:top left;
   background:radial-gradient(ellipse at 0 100%,var(--glow-a),transparent 25%),radial-gradient(ellipse at 100% 0,var(--glow-b),transparent 23%),repeating-linear-gradient(0deg,var(--paper-alt),var(--paper-alt) 3px,var(--paper) 4px);
   border:3px solid var(--accent);border-radius:28px;padding:18px;color:var(--ink);overflow:hidden;box-shadow:0 8px 22px #253b4a20}
@@ -53,11 +53,11 @@ button:focus-visible,input:focus-visible{outline:3px solid #4d86b2;outline-offse
 .passport-title{display:grid;grid-template-columns:108px minmax(0,1fr) 108px;gap:14px;align-items:center;border-bottom:1px solid var(--rule);padding-bottom:14px;flex:none}
 .title-side{display:grid;gap:10px;justify-items:center}
 .title-center{text-align:center;min-width:0}
-.passport-kicker{font:700 13px var(--font-ui);letter-spacing:.11em;text-transform:uppercase;color:var(--soft)}
+.passport-kicker{font:700 15px var(--font-ui);letter-spacing:.12em;text-transform:uppercase;color:var(--soft)}
 .passport-title h3{font:500 52px/1.05 var(--font-display);margin:6px 0 0;color:var(--ink)}
 .passport-title h3 em{font:400 118px/.8 var(--font-script);display:block;color:var(--ink);margin:6px 0 12px;position:relative}
 .passport-title h3 em:after{content:"";display:block;width:190px;height:5px;background:var(--ornament);border-radius:50%;margin:8px auto 0;transform:rotate(-2deg)}
-.identity-eternal{display:flex;align-items:center;justify-content:center;gap:12px;color:var(--soft);font-size:15px;letter-spacing:.2em;text-transform:uppercase}
+.identity-eternal{display:flex;align-items:center;justify-content:center;gap:12px;color:var(--soft);font:700 15px var(--font-ui);letter-spacing:.12em;text-transform:uppercase}
 .identity-eternal span{width:44px;height:1px;background:var(--dash)}
 .badge-fixed,.badge-slot{width:108px;height:108px;border-radius:50%;display:grid;place-items:center;padding:0}
 .badge-fixed{border:2px solid var(--ornament);background:radial-gradient(circle,var(--slot),transparent 78%);color:var(--ornament)}
@@ -67,38 +67,37 @@ button:focus-visible,input:focus-visible{outline:3px solid #4d86b2;outline-offse
 .badge-slot svg{width:64px;height:64px}
 .badge-hint{display:grid;justify-items:center;gap:2px;color:var(--soft);font-weight:700}
 .badge-hint svg{width:30px;height:30px}
-.badge-hint small{font-size:14px}
+.badge-hint small{font-size:15px}
 
 .identity{display:grid;grid-template-columns:210px 1fr;gap:28px;padding:14px 4px;border-bottom:1px solid var(--rule);flex:none}
 .photo-box{position:relative;align-self:stretch;min-height:250px;border:2px dashed var(--dash);border-radius:10px;background:linear-gradient(145deg,var(--photo-a),var(--photo-b));display:grid;place-items:center;overflow:hidden;transform:rotate(-1.5deg);color:var(--soft);padding:0}
 .photo-box img{width:100%;height:100%;object-fit:cover}
 .photo-hint{display:grid;justify-items:center;gap:10px;padding:0 12px}
 .photo-hint svg{width:64px;height:64px}
-.photo-hint small{font-size:20px;font-weight:700;line-height:1.2;text-align:center}
+.photo-hint small{font-size:18px;font-weight:700;line-height:1.2;text-align:center}
 .photo-badge{position:absolute;right:10px;bottom:10px;width:46px;height:46px;border-radius:50%;background:#fffffff0;color:var(--ink);display:grid;place-items:center;box-shadow:0 2px 6px #0003}
 .photo-badge svg{width:26px;height:26px}
-.identity-data{display:flex;flex-direction:column;justify-content:center;gap:10px;min-width:0}
-.identity-data label,.identity-data .field-label{display:block;font-size:16px;color:var(--soft);letter-spacing:.1em;text-transform:uppercase}
-.citizenship-block{display:grid;gap:2px;justify-items:start;min-width:0}
-.name-input{display:block;border:0;border-bottom:1.5px solid var(--dash);background:transparent;width:100%;min-height:64px;padding:0 0 3px;color:var(--ink);font:400 52px var(--font-script);outline:none;border-radius:0}
-.name-input::placeholder{color:color-mix(in srgb,var(--soft),transparent 45%)}
-.citizenship{font:400 46px var(--font-script);color:var(--ink);background:linear-gradient(transparent 45%,var(--mark) 45%,var(--mark) 83%,transparent 83%);width:max-content;max-width:100%;padding:0 14px}
-.issued{font:26px var(--font-ui);color:var(--soft)}
-.issued strong{display:inline-block;font:64px/1 var(--font-script);color:var(--ink);margin-left:14px;font-weight:400;vertical-align:middle}
+.identity-data{display:flex;flex-direction:column;justify-content:space-between;gap:12px;min-width:0}
+/* Los tres campos (Nombre, Tu ciudadanía, Expedida por) comparten el mismo formato: etiqueta arriba, valor en letra manuscrita sobre una línea */
+.field{display:grid;gap:2px;min-width:0}
+.field-label{font:700 15px var(--font-ui);letter-spacing:.12em;text-transform:uppercase;color:var(--soft)}
+.field-value{display:block;width:100%;height:62px;margin:0;padding:0 2px;border:0;border-bottom:1.5px solid var(--dash);border-radius:0;background:transparent;outline:none;color:var(--ink);font:400 48px/62px var(--font-script);white-space:nowrap;overflow:hidden}
+input.field-value{line-height:normal}
+.field-value::placeholder{color:color-mix(in srgb,var(--soft),transparent 45%)}
 
-.seal-caption{display:flex;justify-content:space-between;align-items:center;margin:12px 0 8px;color:var(--soft);font-weight:800;font-size:18px;flex:none}
+.seal-caption{display:flex;justify-content:space-between;align-items:center;margin:12px 0 8px;color:var(--soft);font:700 15px var(--font-ui);letter-spacing:.12em;text-transform:uppercase;flex:none}
 .stamp-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:repeat(4,minmax(0,1fr));gap:14px 0;flex:1;min-height:0}
 .stamp-slot{height:100%;aspect-ratio:1;justify-self:center;align-self:center;border:2px dashed var(--dash);border-radius:50%;background:var(--slot);padding:0;display:grid;place-items:center;position:relative}
 .stamp-slot.filled{border:0;background:transparent;animation:stamp-in .55s cubic-bezier(.2,1.7,.4,1) both}
 .stamp-slot.pulse{animation:slot-pulse 1.3s ease-in-out infinite}
-.passport-footer{border-top:1px solid var(--rule);margin-top:8px;padding-top:6px;display:flex;justify-content:space-between;align-items:center;font:28px var(--font-script);color:var(--ink);flex:none}
-.passport-footer small{font:700 14px var(--font-ui);letter-spacing:.1em;text-transform:uppercase}
+.passport-footer{border-top:1px solid var(--rule);margin-top:8px;padding-top:6px;display:flex;justify-content:space-between;align-items:center;font:30px var(--font-script);color:var(--ink);flex:none}
+.passport-footer small{font:700 15px var(--font-ui);letter-spacing:.12em;text-transform:uppercase;color:var(--soft)}
 .skeleton{aspect-ratio:750/1500;max-width:560px;margin:0 auto;border-radius:22px;background:linear-gradient(100deg,#eee9df 20%,#faf8f2 40%,#eee9df 60%);background-size:200%;animation:shimmer 1.3s infinite}
 
 /* Mientras se exporta: se ocultan las ayudas de edición y la sombra */
 .passport.exporting{box-shadow:none}
 .exporting .photo-hint,.exporting .photo-badge,.exporting .badge-hint{visibility:hidden}
-.exporting .name-input::placeholder{color:transparent}
+.exporting .field-value::placeholder{color:transparent}
 .exporting .stamp-seal,.exporting .stamp-slot{animation:none!important}
 
 /* ───────── Sellos ───────── */
@@ -138,6 +137,10 @@ button:focus-visible,input:focus-visible{outline:3px solid #4d86b2;outline-offse
 .sticker-label{font-size:12px;font-weight:800;color:var(--navy)}
 .bottom-actions{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:20px}
 .reset-btn{grid-column:1/-1;border:0;background:transparent;color:#65798a;text-decoration:underline;min-height:44px}
+
+/* ───────── Aviso de privacidad (pie de página) ───────── */
+.site-note{max-width:640px;margin:44px auto 0;text-align:center;font-size:12px;line-height:1.6;color:#7d8b97}
+.site-note p{margin:0}
 
 /* ───────── Selector de gustos ───────── */
 .badge-options{display:grid;grid-template-columns:repeat(auto-fit,minmax(104px,1fr));gap:10px;margin-top:18px}

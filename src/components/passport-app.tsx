@@ -227,8 +227,8 @@ export default function PassportApp() {
     setResetOpen(false);
   };
 
-  // El nombre ocupa todo el ancho disponible: empieza grande y se reduce solo si es largo.
-  const nameSize = Math.min(52, Math.max(26, 976 / Math.max(name.length, 1)));
+  // Todos los campos usan el mismo tamaño (48 px); el nombre solo se reduce si es muy largo.
+  const nameSize = Math.min(48, Math.max(26, 960 / Math.max(name.length, 1)));
 
   const renderBadgeSlot = (slot: number) => {
     const id = badgeSlots[slot];
@@ -328,10 +328,10 @@ export default function PassportApp() {
                         )}
                       </button>
                       <div className="identity-data">
-                        <label>
-                          Nombre
+                        <label className="field">
+                          <span className="field-label">Nombre</span>
                           <input
-                            className="name-input"
+                            className="field-value"
                             type="text"
                             maxLength={32}
                             autoComplete="name"
@@ -341,11 +341,14 @@ export default function PassportApp() {
                             style={{ fontSize: nameSize }}
                           />
                         </label>
-                        <div className="citizenship-block">
+                        <div className="field">
                           <span className="field-label">Tu ciudadanía</span>
-                          <div className="citizenship">Reino de Dios</div>
+                          <div className="field-value">Reino de Dios</div>
                         </div>
-                        <div className="issued">Expedida por <strong>Dios</strong></div>
+                        <div className="field">
+                          <span className="field-label">Expedida por</span>
+                          <div className="field-value">Dios</div>
+                        </div>
                       </div>
                     </div>
 
@@ -417,6 +420,14 @@ export default function PassportApp() {
             </div>
           </section>
         </div>
+
+        <footer className="site-note">
+          <p>
+            Tu nombre, tu foto, tus sellos y tu personalización se guardan solo en este dispositivo, dentro de tu navegador.
+            No usamos cookies ni enviamos tus datos a ningún servidor: solo salen cuando tú descargas o compartes la imagen.
+            Si borras los datos del sitio, se pierden; descarga tu pasaporte para conservar una copia.
+          </p>
+        </footer>
 
         {placing && (
           <div className="placement-bar">
