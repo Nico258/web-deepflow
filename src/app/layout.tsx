@@ -7,7 +7,7 @@ const caveat = Caveat_Brush({ subsets: ["latin"], weight: "400", variable: "--fo
 const nunito = Nunito({ subsets: ["latin"], variable: "--font-ui", display: "swap" });
 
 export const metadata: Metadata = {
-  title: "Pasaporte del Cielo | Conexión",
+  title: "Pasaporte del Cielo | Deepflow",
   description: "Una identidad que no se pierde, se vive.",
 };
 
