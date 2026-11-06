@@ -21,13 +21,15 @@ Para compilar una versión de producción, ejecuta `pnpm build`; para servirla, 
 - `src/components`: interfaz del editor del pasaporte.
 - `src/data`: contenido de los doce sellos y sus versículos.
 - `src/data/themes.ts`: paletas completas del pasaporte (borde, tinta, papel, líneas y acentos).
-- `src/data/badges.ts` y `src/components/badge-icon.tsx`: las imágenes de «Tus gustos» (hasta 2 por pasaporte).
-- `src/data/verses-ntv.ts`: texto de los versículos en la NTV; mientras un sello no tenga texto aquí se muestra en Reina-Valera 1960.
+- `src/data/badges.ts` y `src/components/badge-icon.tsx`: las 12 categorías con íconos de «Tus gustos» (hasta 2 por pasaporte): Música, Cine y series, Deportes, Gastronomía, Viajes y aventuras, Videojuegos, Arte y creatividad, Cultura y lectura, Naturaleza, Moda y estilo, Animales y Tecnología.
+- `src/data/stamps.ts`: los textos de los doce sellos en Nueva Traducción Viviente (NTV).
 - `pasaporte-specs.md`: especificaciones funcionales de la actividad.
 
 El pasaporte se dibuja en un lienzo fijo de 750 × 1500 px (constante `PASSPORT_H` en `passport-app.tsx`) que se escala a la pantalla, así la vista previa y la imagen exportada son idénticas.
 
 El progreso se conserva en IndexedDB en el navegador del dispositivo. Las fotos no se envían a ningún servicio. El reparto aleatorio de sobres se crea una vez y también queda guardado localmente. No hay base de datos ni cuentas en esta versión.
+
+Al actualizar desde una versión que usaba identificadores anteriores para «Tus gustos», las elecciones guardadas con esos identificadores no se convierten automáticamente a las nuevas categorías.
 
 La interfaz y la lógica están separadas por responsabilidad para que el sitio pueda incorporar después nuevas rutas y actividades. Si en otra etapa se requiere sincronización o participación compartida, se podrá añadir una capa de almacenamiento remoto (por ejemplo, Supabase) sin convertir el estado local actual en una dependencia de ese servicio.
 
