@@ -445,7 +445,7 @@ export default function PassportApp() {
               <p>{stamp.declaration}</p>
               <blockquote>“{verse.text}”</blockquote>
               <strong>{stamp.reference} · {verse.version}</strong>
-              {verse.version === "NTV" && <small className="verse-credit">Nueva Traducción Viviente (NTV) © Tyndale House Foundation</small>}
+              {verse.version === "NTV" && <small className="verse-credit">Nueva Traducción Viviente (NTV)</small>}
               <div className="detail-actions">
                 {slots.includes(stamp.id) ? (
                   <>
