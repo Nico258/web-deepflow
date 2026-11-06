@@ -466,7 +466,7 @@ export default function PassportApp() {
           <p>
             Tu nombre, tu foto, tus sellos y tu personalización se guardan solo en este dispositivo, dentro de tu navegador.
             No usamos cookies ni enviamos tus datos a ningún servidor: solo salen cuando tú descargas o compartes la imagen.
-            Si borras los datos del sitio, se pierden; descarga tu pasaporte para conservar una copia.
+            Si borras los datos del sitio, se pierden; descarga tu pasaporte para conservar una copia .
           </p>
         </footer>
 
