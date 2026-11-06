@@ -30,12 +30,13 @@ function shuffle() {
   return [ids.slice(0, 4), ids.slice(4, 8), ids.slice(8, 12)];
 }
 
-// Safari y todos los navegadores de iPhone/iPad (WebKit) dibujan en blanco las imágenes que van dentro de la captura
-// en el primer intento. Se detecta para aplicar las dos medidas de exportPhoto/exportImage.
-const isWebKit = () =>
-  /iPad|iPhone|iPod/.test(navigator.userAgent) || /^((?!chrome|android|crios|fxios).)*safari/i.test(navigator.userAgent);
+// La foto no entra en la captura de html-to-image: Safari y todos los navegadores de iPhone/iPad (WebKit) la dejan
+// en blanco porque dan la captura por lista antes de terminar de cargar las imágenes que lleva dentro.
+// Por eso se excluye de la captura y se pinta después a mano con paintPhoto, igual en todos los navegadores.
+// Si se añade otra imagen (<img>) dentro del pasaporte, tendrá el mismo problema en iPhone.
+const isPhoto = (el: HTMLElement) => el instanceof HTMLImageElement && el.closest(".photo-box") !== null;
 
-/** Vuelve a pintar la foto encima de la captura, en su posición exacta, con el mismo recorte y giro que en pantalla. */
+/** Pinta la foto sobre la captura, en su posición exacta, con el mismo recorte y giro que en pantalla. */
 async function paintPhoto(canvas: HTMLCanvasElement, card: HTMLElement, src: string) {
   const box = card.querySelector<HTMLElement>(".photo-box");
   const inner = card.querySelector<HTMLElement>(".passport-inner");
@@ -209,14 +210,11 @@ export default function PassportApp() {
       await document.fonts.ready;
       await Promise.all(Array.from(node.querySelectorAll("img")).map((img) => img.decode().catch(() => undefined)));
       // La copia que se captura va sin escala: sale a 750 × 1500 aunque en pantalla se vea más pequeña.
-      const options = { width: PASSPORT_W, height: PASSPORT_H, pixelRatio: 2, backgroundColor: theme.vars["--paper"], cacheBust: true, style: { transform: "none" } };
-      const webkit = isWebKit();
-      // 1) WebKit: dos capturas pequeñas de calentamiento para que cargue la foto antes de la captura real.
-      if (webkit) for (let i = 0; i < 2; i++) await toCanvas(node, { ...options, pixelRatio: 0.5 }).catch(() => undefined);
+      const options = { width: PASSPORT_W, height: PASSPORT_H, pixelRatio: 2, backgroundColor: theme.vars["--paper"], cacheBust: true, style: { transform: "none" }, filter: (el: HTMLElement) => !isPhoto(el) };
       const capture = async () => {
+        // Se captura el pasaporte sin la foto (ver isPhoto) y luego se pinta la foto encima.
         const canvas = await toCanvas(node, options);
-        // 2) WebKit: si aun así la foto no salió, se pinta encima a mano (no depende del navegador).
-        if (webkit && photo) await paintPhoto(canvas, node, photo).catch(() => undefined);
+        if (photo) await paintPhoto(canvas, node, photo);
         return new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/png"));
       };
       let blob = await capture();
