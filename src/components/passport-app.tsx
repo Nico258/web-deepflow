@@ -309,11 +309,8 @@ export default function PassportApp() {
     <div className="app-shell">
       <header className="topbar">
         <div className="brand">
-          <svg className="brand-mark" viewBox="0 0 40 40" aria-label="Flor DeepFlow">
-            {[0, 60, 120, 180, 240, 300].map((a) => <ellipse key={a} cx="20" cy="9" rx="4.3" ry="8" transform={`rotate(${a} 20 20)`} />)}
-            <circle cx="20" cy="20" r="3" />
-          </svg>
-          DeepFlow
+          <Image src="/deepflowlogo.png" alt="" width={50} height={42} priority className="brand-mark" />
+          <span className="brand-name">DeepFlow</span>
         </div>
         <div className="top-note">Ezequiel 47:1-12</div>
       </header>
