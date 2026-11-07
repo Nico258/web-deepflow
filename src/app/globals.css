@@ -11,8 +11,9 @@ button:focus-visible,input:focus-visible{outline:3px solid #4d86b2;outline-offse
 .app-shell{min-height:100vh;background:radial-gradient(ellipse at 4% 8%,#cbdde9aa 0,transparent 20%),radial-gradient(ellipse at 96% 45%,#e7d8b866 0,transparent 17%),radial-gradient(ellipse at 40% 100%,#d5e5db88 0,transparent 28%),#faf9f5;position:relative;overflow:hidden;overflow:clip}
 .app-shell:before{content:"✧  ·  ✦  ·  ✧";position:absolute;top:115px;right:8%;font-size:22px;color:var(--gold);opacity:.6;letter-spacing:18px;pointer-events:none}
 .topbar{height:70px;display:flex;align-items:center;justify-content:space-between;max-width:1180px;margin:auto;padding:0 26px;border-bottom:1px solid #dfded6;position:relative;z-index:1}
-.brand{display:flex;align-items:center;gap:9px;font:700 22px var(--font-display);color:var(--navy)}
-.brand-mark{width:32px;height:32px;fill:#397bb4}.brand-mark circle{fill:#e9f5ff}
+.brand{display:flex;align-items:center;gap:8px}
+.brand-mark{width:48px;height:42px;object-fit:contain}
+.brand-name{font:900 25px/1 var(--font-ui);letter-spacing:-.06em;color:#397bb4}
 .top-note{font:700 13px var(--font-ui);letter-spacing:.08em;color:#416b8b}
 .main-wrap{max-width:1180px;margin:auto;padding:32px 26px 90px;position:relative}
 
@@ -176,7 +177,7 @@ input.field-value{line-height:normal}
 
 @media(min-width:700px){.sheet-backdrop{align-items:center}.detail-sheet{border-radius:22px}.activity-section{position:sticky;top:16px;max-height:calc(100vh - 32px);overflow:auto}}
 @media(max-width:699px){
-  .topbar{height:60px;padding:0 16px}.top-note{font-size:11px}
+  .topbar{height:60px;padding:0 16px}.brand-mark{width:44px;height:38px}.brand-name{font-size:23px}.top-note{font-size:11px}
   .main-wrap{padding:22px 14px 90px}
   .hero-title{font-size:clamp(30px,9vw,40px)}
   .stepper span{font-size:12px;padding:8px 12px}
