@@ -247,7 +247,7 @@ export default function PassportApp() {
     <div className="app-shell">
       <header className="topbar">
         <div className="brand">
-          <Image src="/deepflow-flower.png" alt="" width={50} height={42} priority className="brand-mark" />
+          <Image src="/deepflowlogo.png" alt="" width={50} height={42} priority className="brand-mark" />
           <span className="brand-name">DeepFlow</span>
         </div>
         <div className="top-note">Ezequiel 47:1-12</div>
