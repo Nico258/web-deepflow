@@ -188,3 +188,55 @@ input.field-value{line-height:normal}
   .detail-sheet{padding-bottom:max(26px,env(safe-area-inset-bottom))}
 }
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important;transition-duration:.01ms!important}}
+
+/* ───────── Portada de Deepflow ───────── */
+.deepflow-home{min-height:100vh;padding:0 clamp(20px,6vw,88px);overflow:hidden;background:radial-gradient(ellipse at 86% 15%,#dce8e7 0,transparent 28%),radial-gradient(ellipse at 5% 48%,#e6e2d4 0,transparent 24%),#f8f7f2}
+.deepflow-nav{height:82px;max-width:1180px;margin:auto;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #deded5}
+.deepflow-brand{display:inline-flex;align-items:center;gap:10px;text-decoration:none;color:#173b5c;font:700 23px var(--font-display);letter-spacing:-.04em}
+.deepflow-mark{width:34px;height:34px;display:grid;place-items:center;border-radius:50%;background:#173b5c;color:#f8f7f2;font:italic 700 25px var(--font-display)}
+.deepflow-nav-note{color:#617386;font-size:13px;font-weight:700;letter-spacing:.03em}
+.deepflow-hero{max-width:1180px;margin:0 auto;padding:clamp(72px,11vw,142px) 0 clamp(64px,9vw,112px)}
+.deepflow-eyebrow{margin:0 0 15px;color:#52766f;font-size:12px;font-weight:800;letter-spacing:.13em;text-transform:uppercase}
+.deepflow-hero h1{max-width:800px;margin:0;color:#173b5c;font:500 clamp(43px,8vw,88px)/1.04 var(--font-display);letter-spacing:-.055em}
+.deepflow-hero h1 span{color:#558176;font-style:italic}
+.deepflow-intro{max-width:590px;margin:24px 0 0;color:#617386;font-size:clamp(16px,2vw,19px);line-height:1.75}
+.deepflow-content{max-width:1180px;margin:0 auto;padding:0 0 100px}
+.deepflow-section-heading{display:flex;align-items:end;justify-content:space-between;gap:20px;margin-bottom:24px}
+.deepflow-section-heading .deepflow-eyebrow{margin-bottom:7px}
+.deepflow-section-heading h2{margin:0;color:#173b5c;font:500 clamp(29px,4vw,40px)/1.15 var(--font-display);letter-spacing:-.03em}
+.deepflow-section-heading>span{padding-bottom:5px;color:#778477;font-size:13px}
+.deepflow-cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}
+.deepflow-card,.deepflow-coming-card{min-height:280px;overflow:hidden;border:1px solid #e3e1d8;border-radius:18px;background:#fffefa;box-shadow:0 12px 35px #23364a0a}
+.deepflow-card-featured{display:grid;grid-template-columns:.82fr 1.18fr;grid-column:span 2}
+.deepflow-card-art{position:relative;min-height:280px;overflow:hidden;background:linear-gradient(145deg,#e1ece9,#f2e7cc)}
+.deepflow-orbit{position:absolute;left:50%;top:50%;border:1px solid #759b8b88;border-radius:50%;transform:translate(-50%,-50%) rotate(-24deg)}
+.deepflow-orbit-one{width:235px;height:150px}
+.deepflow-orbit-two{width:185px;height:235px;transform:translate(-50%,-50%) rotate(32deg)}
+.deepflow-card-symbol{position:absolute;left:50%;top:50%;display:grid;width:82px;height:82px;place-items:center;border:1px solid #fff9;border-radius:50%;background:#f8f7f2b8;color:#52766f;font-size:38px;transform:translate(-50%,-50%);box-shadow:0 8px 26px #173b5c18}
+.deepflow-card-copy{align-self:center;padding:clamp(24px,4vw,48px)}
+.deepflow-card-category{margin:0 0 12px;color:#648474;font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase}
+.deepflow-card-copy h3,.deepflow-coming-card h3{margin:0;color:#173b5c;font:500 clamp(24px,3vw,34px)/1.15 var(--font-display);letter-spacing:-.03em}
+.deepflow-card-description,.deepflow-coming-card p{color:#687986;font-size:14px;line-height:1.7}
+.deepflow-card-description{max-width:390px;margin:13px 0 22px}
+.deepflow-card-link{display:inline-flex;align-items:center;gap:8px;color:#315f56;font-size:14px;font-weight:800;text-decoration:none}
+.deepflow-card-link span{transition:transform .2s ease}
+.deepflow-card-link:hover span{transform:translateX(4px)}
+.deepflow-coming-card{display:flex;flex-direction:column;justify-content:center;padding:clamp(24px,4vw,42px);border-style:dashed;background:#f8f7f280}
+.deepflow-coming-icon{display:grid;width:34px;height:34px;margin-bottom:20px;place-items:center;border:1px solid #cfd9d0;border-radius:50%;color:#638173;font-size:22px}
+.deepflow-coming-card h3{font-size:23px}
+.deepflow-coming-card p{max-width:300px;margin:10px 0 0}
+.deepflow-footer{display:flex;max-width:1180px;min-height:76px;margin:auto;align-items:center;justify-content:space-between;gap:14px;border-top:1px solid #deded5;color:#78847e;font-size:12px}
+.deepflow-brand-name{color:#173b5c;font:700 16px var(--font-display)}
+@media(max-width:700px){
+  .deepflow-home{padding:0 20px}
+  .deepflow-nav{height:68px}
+  .deepflow-nav-note{max-width:150px;text-align:right;font-size:11px}
+  .deepflow-hero{padding:76px 0 65px}
+  .deepflow-section-heading{align-items:start;flex-direction:column;gap:8px}
+  .deepflow-cards{grid-template-columns:1fr}
+  .deepflow-card-featured{grid-column:auto;grid-template-columns:1fr}
+  .deepflow-card-art{min-height:205px}
+  .deepflow-card-copy{padding:25px}
+  .deepflow-coming-card{min-height:210px}
+  .deepflow-footer{align-items:flex-start;justify-content:center;flex-direction:column;padding:17px 0}
+}

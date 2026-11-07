@@ -5,6 +5,7 @@ import { Camera, Check, Crown, EnvelopeSimple, EnvelopeSimpleOpen, Globe, Plus, 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import Image from "next/image";
+import Link from "next/link";
 import { getVerse, stamps } from "@/data/stamps";
 import { themeFor, themes } from "@/data/themes";
 import { badges, sanitizeBadges, type BadgeId } from "@/data/badges";
@@ -246,14 +247,14 @@ export default function PassportApp() {
   return (
     <div className="app-shell">
       <header className="topbar">
-        <div className="brand">
-          <svg className="brand-mark" viewBox="0 0 40 40" aria-label="Flor DeepFlow">
+        <Link className="brand" href="/" aria-label="Deepflow, volver al inicio">
+          <svg className="brand-mark" viewBox="0 0 40 40" aria-hidden="true">
             {[0, 60, 120, 180, 240, 300].map((a) => <ellipse key={a} cx="20" cy="9" rx="4.3" ry="8" transform={`rotate(${a} 20 20)`} />)}
             <circle cx="20" cy="20" r="3" />
           </svg>
           DeepFlow
-        </div>
-        <div className="top-note">Ezequiel 47:1-12</div>
+        </Link>
+        <Link className="top-note" href="/">Volver a Deepflow</Link>
       </header>
 
       <main className="main-wrap">

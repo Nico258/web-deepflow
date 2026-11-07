@@ -1,6 +1,6 @@
-# Pasaporte del Cielo
+# Deepflow
 
-Primera versión de la actividad del grupo Conexión. Aplicación web con Next.js App Router, React, TypeScript y Tailwind CSS.
+Deepflow es un sitio para reunir diferentes contenidos y experiencias. La primera sección disponible es «Pasaporte del Cielo». Está construido con Next.js App Router, React y TypeScript.
 
 ## Ejecutar en desarrollo
 
@@ -14,6 +14,11 @@ pnpm dev
 Abre `http://localhost:3000`.
 
 Para compilar una versión de producción, ejecuta `pnpm build`; para servirla, ejecuta `pnpm start`.
+
+## Rutas
+
+- `/`: portada de Deepflow con acceso a los contenidos disponibles.
+- `/pasaporte-del-cielo`: actividad interactiva del Pasaporte del Cielo.
 
 ## Estructura
 
