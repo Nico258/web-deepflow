@@ -64,6 +64,9 @@ export default function PassportApp() {
 
   const card = useRef<HTMLDivElement>(null);
   const cardArea = useRef<HTMLElement>(null);
+  const activityArea = useRef<HTMLElement>(null);
+  const attentionTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [attention, setAttention] = useState(false);
   const file = useRef<HTMLInputElement>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -120,6 +123,22 @@ export default function PassportApp() {
 
   const scrollToPassport = () => cardArea.current?.scrollIntoView({ behavior: "smooth", block: "center" });
 
+  /** Lleva a la sección de sobres y la resalta un momento. En computador ya está a la vista (al lado), así que solo se resalta. */
+  const goToEnvelopes = () => {
+    const el = activityArea.current;
+    if (!el) return;
+    const top = el.getBoundingClientRect().top;
+    if (top < 0 || top > window.innerHeight * 0.6) {
+      const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      el.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" });
+    }
+    // Se apaga y se vuelve a encender para que la animación se repita si tocan otro espacio vacío.
+    setAttention(false);
+    requestAnimationFrame(() => setAttention(true));
+    if (attentionTimer.current) clearTimeout(attentionTimer.current);
+    attentionTimer.current = setTimeout(() => setAttention(false), 1800);
+  };
+
   const place = (id: number) => {
     if (slots.includes(id)) return notify("Ese sello ya está pegado.");
     setPending(id);
@@ -141,8 +160,10 @@ export default function PassportApp() {
       if (!wasMoving && navigator.vibrate) navigator.vibrate(10);
       return;
     }
-    if (current !== null) setSelected(current);
-    else notify("Elige un sello de tus sobres para pegarlo aquí.");
+    if (current !== null) return setSelected(current);
+    // Espacio vacío: se lleva a la persona a los sobres, que es de donde salen los sellos.
+    goToEnvelopes();
+    notify(opened.length < 3 ? "Abre un sobre y elige el sello que quieras pegar." : "Elige un sello de tus sobres para pegarlo.");
   };
 
   const chooseBadge = (slot: number, id: BadgeId | null) => {
@@ -376,7 +397,7 @@ export default function PassportApp() {
             )}
           </section>
 
-          <section className="activity-section">
+          <section className={`activity-section ${attention ? "attention" : ""}`} ref={activityArea}>
             <div className="section-heading">
               <div><h2>Tus sobres</h2><p>Tres sobres, cuatro sellos distintos en cada uno.</p></div>
             </div>
