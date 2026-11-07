@@ -169,6 +169,11 @@ input.field-value{line-height:normal}
 .toast{position:fixed;z-index:50;left:50%;bottom:22px;transform:translateX(-50%);background:#173b5c;color:white;border-radius:10px;padding:12px 17px;font-size:14px;box-shadow:0 8px 25px #1f395366;animation:toast-in .2s ease-out}
 
 @keyframes stamp-in{0%{transform:scale(.6);filter:drop-shadow(0 0 0 transparent)}65%{transform:scale(1.12);filter:drop-shadow(0 5px 4px #152c4245)}100%{transform:scale(1)}}
+/* Al tocar un espacio vacío del pasaporte: la sección de sobres se resalta un momento */
+.activity-section.attention{animation:section-attention .9s ease-in-out 2}
+.activity-section.attention .envelope:not(.opened){animation:envelope-nudge .9s ease-in-out 2}
+@keyframes section-attention{50%{box-shadow:0 0 0 5px #c69a4a55;border-color:#c69a4a}}
+@keyframes envelope-nudge{30%{transform:translateY(-4px) rotate(-2deg)}60%{transform:translateY(0) rotate(1deg)}}
 @keyframes slot-pulse{50%{box-shadow:0 0 0 6px color-mix(in srgb,var(--ornament),transparent 65%)}}
 @keyframes envelope-pop{0%{transform:translateY(8px) scale(.65) rotate(-8deg);opacity:0}60%{transform:translateY(-3px) scale(1.15) rotate(3deg);opacity:1}100%{transform:none}}
 @keyframes shimmer{to{background-position:-200%}}
