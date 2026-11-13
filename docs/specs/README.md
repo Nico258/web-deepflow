@@ -48,7 +48,7 @@ Lo único que comparten es la **identidad** (nickname y token, tabla `users`). N
 - **Nickname de 3 a 7 caracteres** (`a-z`, `0-9`, `_`), para que no quepa un nombre completo. La API **rechaza nicknames vulgares** con una lista de palabras bloqueadas.
 - **El nickname va atado a su token:** un nickname que ya existe se rechaza desde otro dispositivo («no disponible»).
 - `users` guarda solo el nickname y el hash del token. Ni nombres ni respuestas: **en el grupo hay menores de edad**.
-- Cada persona **acepta el aviso de privacidad al completar su primer día**.
+- Cada persona **acepta el aviso de privacidad al completar su primer día**. El aviso va solo en la página del reto y remite a los líderes del grupo por WhatsApp para borrar la cuenta o resolver dudas.
 - **Sin código de recuperación** por ahora, para que entrar tenga la menor fricción posible. Los líderes **pueden liberar nicknames**.
 
 **Reto de 7 días (primera edición)**
@@ -79,24 +79,24 @@ Ninguna de estas bloquea crear la base de datos: el esquema de [04 §4](04-base-
 
 | # | Pregunta | Dónde |
 |---|---|---|
-| 1 | ¿Quién es el **responsable de los datos** que aparece en el aviso de privacidad y recibe las solicitudes de borrado? | [00 §3](00-arquitectura.md) |
-| 2 | La **lista de palabras bloqueadas** para nicknames: alguien tiene que armarla y probarla con nombres comunes | [03 §5](03-api.md) |
+| 1 | La **lista de palabras bloqueadas** para nicknames: alguien tiene que armarla y probarla con nombres comunes | [03 §5](03-api.md) |
 
 ### Pueden esperar
 
 | # | Pregunta | Dónde |
 |---|---|---|
-| 3 | «La racha continúa con los retos siguientes»: ¿cuentan los días entre retos? ¿Y el pasaporte, que es local? | [02 §4](02-reto-7-dias.md) |
-| 4 | ¿Una clave de administrador por líder o una compartida? ¿Los retos siguientes se crean con script de siembra o con rutas de administración? | [03](03-api.md) |
-| 5 | ¿Los despliegues *preview* de Vercel entran en la lista de CORS? | [03 §7](03-api.md) |
-| 6 | ¿Qué herramienta de migraciones? | [04 §5](04-base-de-datos.md) |
-| 7 | ¿Dónde se guardan los volcados de respaldo y por cuánto tiempo? | [00 §4](00-arquitectura.md) |
-| 8 | Peticiones de oración: ¿las ve todo el grupo o solo los líderes? ¿Anónima para el grupo o anonimato total? ¿Pueden publicar los menores? | [05](05-peticiones-de-oracion.md) |
+| 2 | «La racha continúa con los retos siguientes»: ¿cuentan los días entre retos? ¿Y el pasaporte, que es local? | [02 §4](02-reto-7-dias.md) |
+| 3 | ¿Una clave de administrador por líder o una compartida? ¿Los retos siguientes se crean con script de siembra o con rutas de administración? | [03](03-api.md) |
+| 4 | ¿Los despliegues *preview* de Vercel entran en la lista de CORS? | [03 §7](03-api.md) |
+| 5 | ¿Qué herramienta de migraciones? | [04 §5](04-base-de-datos.md) |
+| 6 | ¿Dónde se guardan los volcados de respaldo y por cuánto tiempo? | [00 §4](00-arquitectura.md) |
+| 7 | Peticiones de oración: ¿las ve todo el grupo o solo los líderes? ¿Anónima para el grupo o anonimato total? ¿Pueden publicar los menores? | [05](05-peticiones-de-oracion.md) |
 
 ### Resueltas
 
 - **Fecha de inicio:** sábado 14 de noviembre de 2026; cierra el viernes 20.
 - **Menores de edad:** sí hay. Se guarda solo un nickname corto y la participación; cada quien acepta el aviso al completar su primer día.
+- **Responsable de los datos:** los líderes del grupo DeepFlow. El aviso, solo en la página del reto, dice que se escriba a un líder por el grupo de WhatsApp, sin dar nombres ni teléfonos.
 - **Quien llega tarde:** los días se bloquean a medianoche; solo participa en los días restantes.
 - **Umbral del grupo:** 60 %, evaluado cada día.
 - **Firma del compromiso:** es escribir el nickname (registrarse).

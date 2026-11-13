@@ -92,6 +92,8 @@ Las demás specs se refieren a esta sección.
 | Aceptación del aviso | **Cada persona acepta el aviso de privacidad al completar su primer día** (que es cuando queda inscrita en el reto, [02 §3](02-reto-7-dias.md)) | Aceptar en el mismo momento en que empieza a participar, sin pasos extra |
 | Contenido íntimo | El texto de «Mi conversación con Dios» **se guarda solo en el dispositivo**. El servidor guarda únicamente que el día se completó y si la persona escribió o no | Es lo más íntimo del reto |
 | Transparencia | Debe haber un **aviso corto** de qué se guarda y para qué, y una **forma de pedir el borrado** de la cuenta | Buena práctica, y necesaria para que la aceptación tenga sentido |
+| Responsable de los datos | **Los líderes del grupo DeepFlow.** El aviso no da nombres ni teléfonos: dice que, para borrar la cuenta o resolver dudas, se escriba a un líder del grupo por el grupo de WhatsApp | En un grupo de ~50 personas todos saben quiénes son los líderes; así queda claro a quién acudir sin publicar datos de nadie |
+| Dónde va el aviso | **Solo en la página del reto**, que es la única que envía datos al servidor: visible al escribir el nickname y en el momento de aceptarlo al completar el primer día. La página principal no guarda nada, y el pasaporte guarda todo en el celular y ya tiene su propio aviso | Mostrarlo donde y cuando se recogen los datos |
 
 ### Recomendado
 
@@ -99,7 +101,9 @@ Las demás specs se refieren a esta sección.
 - **Decir con claridad** al registrarse que las conversaciones escritas viven solo en ese celular y navegador.
 - **Dónde guardar qué en el dispositivo:** el token en `localStorage` (es lo decidido; acceso síncrono y simple). Los borradores de texto pueden seguir el patrón que ya usa el pasaporte (IndexedDB, ver `use-passport-storage.ts`). Es una recomendación, no una exigencia: si todo cabe cómodamente en `localStorage`, úsese solo ese.
 - **Borrado:** `DELETE /v1/me` para quien conserva su dispositivo; para quien lo perdió, que un líder lo borre (directamente en la base mientras no exista ruta de administración).
-- El aviso puede cubrir: qué se guarda en el servidor (nickname, qué días se completaron, si se escribió), qué **no** se guarda (el texto ni el nombre), quién lo ve (el grupo ve nickname, nivel y racha si la persona aparece en el muro; los líderes tienen acceso técnico), cómo borrar la cuenta y a quién escribir.
+- El aviso puede cubrir: qué se guarda en el servidor (nickname, qué días se completaron, si se escribió), qué **no** se guarda (el texto ni el nombre), quién lo ve (el grupo ve nickname, nivel y racha si la persona aparece en el muro; los líderes tienen acceso técnico), cómo borrar la cuenta y a quién escribir. Texto de ejemplo:
+
+  > «Solo guardamos tu nickname y qué días completaste; lo que escribes se queda en tu celular. El grupo ve tu nickname, tu nivel del río y tu racha. Si quieres borrar tu cuenta o tienes alguna pregunta, escríbele a un líder del grupo DeepFlow por el grupo de WhatsApp.»
 - Como la API usa `Authorization: Bearer` (no cookies), no hay riesgo de CSRF; sí hay que cuidar XSS (ver §2).
 
 ### Decidido: nickname que ya existe
@@ -108,9 +112,6 @@ Las demás specs se refieren a esta sección.
 
 *Razón:* el muro muestra todos los nicknames; si escribir uno existente diera acceso a la cuenta, cualquiera podría marcar días, ocultar del muro o borrar la cuenta de otra persona. A cambio, quien pierde el celular pierde su cuenta: elige otro nickname o pide a un líder que libere el suyo.
 
-### Abierto
-
-- ¿Quién es el **responsable del tratamiento** (la iglesia, un líder concreto)? Es quien aparece en el aviso y recibe las solicitudes de borrado.
 
 ## 4. Operación en capa gratuita
 
