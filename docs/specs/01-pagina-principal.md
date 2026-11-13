@@ -23,7 +23,7 @@ La página principal presenta el grupo y las actividades disponibles. Su conteni
 
 No se muestra la sección «Lo que estudiamos en cada tema» ni se agrega contenido de temas o reuniones. Se conserva solo la información práctica de día, hora y lugar solicitada.
 
-La página `/quienes-somos` presenta la identidad y el lema de DeepFlow, la inspiración del río de Ezequiel, lo que hacemos, los nombres de las líderes (Laura Diaz, Paola Morales, Valentina Perico e Ivan Camilo) y de los creadores (Nico, Johny y Dani). Los nombres se muestran sin campos ni espacios para fotografías.
+La página `/quienes-somos` presenta la identidad de DeepFlow, la inspiración del río de Ezequiel en un recuadro propio, lo que hacemos, los nombres de las líderes (Laura Diaz, Paola Morales, Valentina Perico e Ivan Camilo) y de los creadores (Nico, Johny y Dani). Los nombres se muestran sin campos ni espacios para fotografías.
 
 ## 3. Cómo ampliar la página más adelante
 

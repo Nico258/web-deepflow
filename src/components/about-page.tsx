@@ -76,20 +76,9 @@ export default function AboutPage() {
               contenido de cada tema y las actividades para vivirlo en casa.
             </p>
           </div>
-          <div className="about-rings" aria-hidden="true">
-            <span />
-            <span />
-            <span />
-            <span />
-          </div>
         </section>
 
-        <section className="about-motto" aria-label="Nuestro lema">
-          <p className="home-section-kicker">Nuestro lema</p>
-          <p>«Tengo un propósito y nadie me separa de Dios.»</p>
-        </section>
-
-        <section className="about-river" aria-labelledby="river-title">
+        <section className="about-river about-river-box" aria-labelledby="river-title">
           <div className="about-river-copy">
             <p className="home-section-kicker">El nombre · Ezequiel 47:1-12</p>
             <h2 id="river-title">Un río que se vuelve más profundo con cada paso</h2>
