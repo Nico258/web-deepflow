@@ -42,29 +42,25 @@ export default function AboutPage() {
     <div className="home-page about-page">
       <SiteHeader />
 
-      <main className="about-main">
-        <section className="about-hero" aria-labelledby="about-title">
-          <div className="about-hero-copy">
-            <p className="home-section-kicker">Quiénes somos</p>
-            <h1 id="about-title">
-              Somos <em>DeepFlow</em>, un grupo de{" "}
-              <em>conexión</em> de la iglesia.
-            </h1>
-            <p>
-              Un lugar para crecer con Dios y con otros. Aquí compartimos el
-              contenido de cada tema y las actividades para vivirlo en casa.
-            </p>
-          </div>
+      <main className="home-main about-main">
+        <section className="intro about-hero" aria-labelledby="about-title">
+          <p className="eyebrow">Quiénes somos</p>
+          <h1 className="hero-title" id="about-title">
+            Somos <em>DeepFlow</em>, un grupo de <em>conexión</em> de la iglesia.
+          </h1>
+          <p className="home-description">
+            Un lugar para crecer con Dios y con otros. Aquí compartimos el contenido de cada tema y las actividades para
+            vivirlo en casa.
+          </p>
         </section>
 
-        <section className="about-river about-river-box" aria-labelledby="river-title">
+        <section className="about-river" aria-labelledby="river-title">
           <div className="about-river-copy">
             <p className="home-section-kicker">Ezequiel 47:1-12</p>
             <h2 id="river-title">Un río que se vuelve más profundo con cada paso</h2>
             <p>
-              En el río de Ezequiel el agua sube del tobillo a la rodilla, a la
-              cintura hasta que solo se puede nadar. Así queremos crecer en
-              DeepFlow: tema a tema, con Dios y acompañados.
+              En el río de Ezequiel el agua sube del tobillo a la rodilla, a la cintura hasta que solo se puede nadar.
+              Así queremos crecer en DeepFlow: tema a tema, con Dios y acompañados.
             </p>
           </div>
           <ol className="about-river-steps">
@@ -78,13 +74,13 @@ export default function AboutPage() {
           </ol>
         </section>
 
-        <section className="about-practices" aria-labelledby="practices-title">
+        <section className="about-section" aria-labelledby="practices-title">
           <p className="home-section-kicker">Lo que hacemos</p>
           <h2 id="practices-title">Crecemos juntos, tema a tema</h2>
           <div className="about-practice-grid">
             {practices.map(({ title, description, Icon }) => (
               <article className="about-practice-card" key={title}>
-                <Icon aria-hidden="true" size={20} />
+                <Icon aria-hidden="true" size={22} />
                 <h3>{title}</h3>
                 <p>{description}</p>
               </article>
@@ -92,7 +88,7 @@ export default function AboutPage() {
           </div>
         </section>
 
-        <section className="about-team" aria-labelledby="leaders-title">
+        <section className="about-section" aria-labelledby="leaders-title">
           <p className="home-section-kicker">Quién lidera</p>
           <h2 id="leaders-title">Las personas detrás del grupo</h2>
           <ul className="about-people-list">
@@ -102,16 +98,16 @@ export default function AboutPage() {
           </ul>
         </section>
 
-        <section className="about-team about-creators" aria-labelledby="developers-title">
-          <p className="home-section-kicker">Developers</p>
-          <h2 id="developers-title">Developers</h2>
-          <ul className="about-people-list about-creators-list">
+        <section className="about-credits" aria-labelledby="developers-title">
+          <p className="home-section-kicker" id="developers-title">
+            Developers
+          </p>
+          <ul>
             {developers.map((name) => (
               <li key={name}>{name}</li>
             ))}
           </ul>
         </section>
-
       </main>
 
       <SiteFooter />
