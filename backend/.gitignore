@@ -1,0 +1,18 @@
+# Secretos: nunca en el repo (specs/00 §4)
+.env
+.env.*
+!.env.example
+
+# Binarios
+/bin/
+*.exe
+
+# Volcados de la base: contienen nombres y nicknames (specs/04 §7)
+/backups/
+*.dump
+*.sql.gz
+
+# Editor / SO
+.vscode/
+.idea/
+.DS_Store
