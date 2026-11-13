@@ -59,13 +59,13 @@ Los textos entre corchetes del diseño (`[Título del tema]`, `[Día y hora de l
 | `/reto-7-dias` | Reto de 7 días ([02](02-reto-7-dias.md)) |
 | `/cedula-del-cielo` | El pasaporte actual (mover `PassportApp` a esta ruta) |
 
-El slug del reto y el de la ruta podrían coincidir con `challenges.slug` en la base para no mantener dos nombres. Al mover el pasaporte hay que actualizar `metadata` de `layout.tsx` (hoy dice «Pasaporte del Cielo | Deepflow» para todo el sitio) y repartir el título por página.
+El slug del reto y el de la ruta podrían coincidir con `challenges.slug` en la base para no mantener dos nombres (`oracion-7-dias` vs `reto-7-dias` hay que unificarlo al implementar). Al mover el pasaporte hay que actualizar `metadata` de `layout.tsx` (hoy dice «Pasaporte del Cielo | Deepflow» para todo el sitio) y repartir el título por página.
 
 **Un efecto a vigilar:** el pasaporte guarda su progreso en IndexedDB del navegador. Cambiar su ruta **no** pierde datos (IndexedDB es por origen, no por ruta), pero sí rompe enlaces ya compartidos a `/`: quien tenga el enlace llegará a la página principal y tendrá que pasar por la tarjeta. Aceptable con ~50 personas, pero conviene avisarlo.
 
 ## 5. Preguntas abiertas de esta página
 
-- **Destino de «Quiero unirme»** (aparece en portada y en Reuniones). ¿Lleva a la sección Reuniones, abre WhatsApp del contacto, o abre el formulario de código de invitación del reto? Depende de qué significa «unirme» (¿al grupo presencial o a la app?).
+- **Destino de «Quiero unirme»** (aparece en portada y en Reuniones). ¿Lleva a la sección Reuniones, abre WhatsApp del contacto, o lleva al reto, donde se elige un nickname para participar (ya no hay código de invitación)? Depende de qué significa «unirme» (¿al grupo presencial o a la app?).
 - **Destino de «Guía del tema» y «Abrir tema».** El PDF no incluye la página del tema (objetivo, preguntas, ministración, fuentes). ¿Se hará una página por tema? Esta spec asume que **no existe todavía** y la deja fuera de alcance.
 - **Contenido real de los Temas 1–5** (títulos) y datos de **Reuniones**: el diseño solo tiene marcadores.
 - **Tema 6 «Disponible»:** ¿la tarjeta lleva a la guía del tema o a las actividades?
@@ -79,3 +79,4 @@ El slug del reto y el de la ruta podrían coincidir con `challenges.slug` en la 
 - Sección «Reuniones» con calendario, mapa o confirmación de asistencia.
 - Mostrar estado del grupo (río del grupo, rachas) en la página principal.
 - Buscador, blog, i18n.
+- Enlace o sección de **peticiones de oración**: es una funcionalidad aparte del reto y posterior a este lanzamiento ([05](05-peticiones-de-oracion.md)). La tarjeta del reto de 7 días no tiene relación con ella.

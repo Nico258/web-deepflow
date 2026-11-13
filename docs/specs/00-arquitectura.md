@@ -34,7 +34,7 @@ flowchart LR
 
   subgraph API["API Go · /v1 (HTTPS + JSON)"]
     M["Middleware<br/>CORS, rate limit, token"]
-    H["Handlers REST<br/>retos, check-ins, peticiones"]
+    H["Handlers REST<br/>identidad, reto y check-ins"]
     D["Lógica de dominio<br/>rachas y día en Bogotá"]
     M --> H --> D
   end
@@ -49,6 +49,8 @@ flowchart LR
   G -->|"GET /v1/health"| M
   G -->|"pg_dump"| P
 ```
+
+El diagrama es el del primer lanzamiento: identidad y reto de 7 días. Las **peticiones de oración** son una funcionalidad completamente distinta y posterior ([05](05-peticiones-de-oracion.md)); cuando existan, serán un módulo aparte dentro de la misma API que solo comparte la identidad.
 
 ### Decidido
 
@@ -78,25 +80,37 @@ Las demás specs se refieren a esta sección.
 
 | Tema | Decisión | Razón |
 |---|---|---|
-| Identidad | Sin login tradicional ni datos sensibles. Cada persona tiene un **nombre de pila** (sin apellido) y un **nickname único dentro del grupo** | Mínimo de datos necesario para que el muro tenga sentido |
-| Autenticación | El nickname **identifica pero no autentica**. Al registrarse la API genera un **token aleatorio** que se guarda en el dispositivo (`localStorage`); en la base solo queda su **hash** | Sin esto cualquiera escribiría el nickname de otra persona y le marcaría días |
-| Acceso al grupo | **Código de invitación** compartido por WhatsApp (en la base, solo su hash) | Evita que cualquiera en internet se registre y publique |
-| Contenido íntimo | El texto de «Mi conversación con Dios» y la firma del compromiso **se guardan solo en el dispositivo**. El servidor guarda únicamente que el día se completó y si la persona escribió o no | Es lo más íntimo del reto; en Colombia las convicciones religiosas son dato sensible (Ley 1581 de 2012) |
-| Transparencia | Debe haber un **aviso corto** de qué se guarda y para qué, y una **forma de pedir el borrado** de la cuenta | Requisito de buena práctica y de la ley citada |
+| Identidad | Sin login tradicional, sin contraseña y con el mínimo de datos. Cada persona tiene solo un **nickname único**. **No se guarda nombre de pila ni ningún otro dato personal** | Mínimo de datos necesario para que el muro tenga sentido, y la menor fricción posible para entrar |
+| Registro = compromiso | En la página del reto, **«firmar» el compromiso es escribir el nickname**. No hay firma aparte | Un solo paso para entrar |
+| Formato del nickname | **3 a 7 caracteres**: letras minúsculas sin tilde, números y guion bajo (`a-z`, `0-9`, `_`). La API lo pasa a minúsculas antes de validarlo | Tan corto que no cabe un nombre completo, lo que protege la identidad (también la de los menores) |
+| Nicknames vulgares | La API **rechaza nicknames con contenido vulgar u ofensivo** con una lista de palabras bloqueadas (detalle en [03 §5](03-api.md)). Lo que se cuele lo quita un líder | Que el muro, que lo ve todo el grupo, no muestre nada ofensivo |
+| Autenticación | Al registrarse la API genera un **token aleatorio** que se guarda en el dispositivo (`localStorage`); en la base solo queda su **hash** | El dispositivo queda identificado sin pedir contraseña |
+| Acceso al grupo | **Entrada libre, sin código de invitación.** Hay una sola comunidad y no existe el concepto de grupo en la base | Simplicidad: una tabla de grupos con una sola fila no aporta nada. Si algún día hay varios, se agrega de forma aditiva |
+| Sin código de recuperación | **No se implementa por ahora** | La menor fricción posible: sin contraseñas ni códigos que guardar |
+| Liberar nicknames | **Permitido:** un líder puede borrar una cuenta para liberar su nickname | Salida para quien perdió el celular o para quitar un nickname inapropiado |
+| Datos y menores | En el grupo **hay menores de edad**. El servidor guarda solo el nickname (máx. 7 caracteres) y la participación en el reto: ni nombres, ni respuestas, ni contacto. Con eso el dato no permite saber quién es la persona fuera del grupo | Reducir al mínimo lo que se guarda |
+| Aceptación del aviso | **Cada persona acepta el aviso de privacidad al completar su primer día** (que es cuando queda inscrita en el reto, [02 §3](02-reto-7-dias.md)) | Aceptar en el mismo momento en que empieza a participar, sin pasos extra |
+| Contenido íntimo | El texto de «Mi conversación con Dios» **se guarda solo en el dispositivo**. El servidor guarda únicamente que el día se completó y si la persona escribió o no | Es lo más íntimo del reto |
+| Transparencia | Debe haber un **aviso corto** de qué se guarda y para qué, y una **forma de pedir el borrado** de la cuenta | Buena práctica, y necesaria para que la aceptación tenga sentido |
 
 ### Recomendado
 
-- **Código de recuperación** corto, mostrado una sola vez al registrarse, para no perder el avance al cambiar de celular. Puede quedar para después del primer lanzamiento. Sin él, quien pierde el dispositivo pierde la cuenta (y su nickname queda ocupado hasta que un líder la borre).
-- **Dónde guardar qué en el dispositivo:** el token en `localStorage` (es lo decidido; acceso síncrono y simple). Los borradores de texto y la firma pueden seguir el patrón que ya usa el pasaporte (IndexedDB, ver `use-passport-storage.ts`), que soporta mejor datos más grandes o una firma dibujada. Es una recomendación, no una exigencia: si todo cabe cómodamente en `localStorage`, úsese solo ese.
-- **Borrado:** `DELETE /v1/me` para quien conserva su dispositivo; para quien lo perdió, que un líder lo borre con la clave de administrador (sin endpoint nuevo: se hace con la API de administración o directamente en la base mientras no exista panel).
-- El aviso puede cubrir: qué se guarda en el servidor (nombre de pila, nickname, qué días se completaron, si se escribió), qué **no** se guarda (el texto y la firma), quién lo ve (el grupo ve nickname, nivel y racha; los líderes tienen acceso técnico), cómo borrar la cuenta y a quién escribir. Revisar el texto con quien responda legalmente por la iglesia.
+- **Al elegir el nickname**, sugerir en pantalla que no sea el nombre real, ya que el muro lo ve todo el grupo.
+- **Decir con claridad** al registrarse que las conversaciones escritas viven solo en ese celular y navegador.
+- **Dónde guardar qué en el dispositivo:** el token en `localStorage` (es lo decidido; acceso síncrono y simple). Los borradores de texto pueden seguir el patrón que ya usa el pasaporte (IndexedDB, ver `use-passport-storage.ts`). Es una recomendación, no una exigencia: si todo cabe cómodamente en `localStorage`, úsese solo ese.
+- **Borrado:** `DELETE /v1/me` para quien conserva su dispositivo; para quien lo perdió, que un líder lo borre (directamente en la base mientras no exista ruta de administración).
+- El aviso puede cubrir: qué se guarda en el servidor (nickname, qué días se completaron, si se escribió), qué **no** se guarda (el texto ni el nombre), quién lo ve (el grupo ve nickname, nivel y racha si la persona aparece en el muro; los líderes tienen acceso técnico), cómo borrar la cuenta y a quién escribir.
 - Como la API usa `Authorization: Bearer` (no cookies), no hay riesgo de CSRF; sí hay que cuidar XSS (ver §2).
+
+### Decidido: nickname que ya existe
+
+**El nickname va atado a su token.** Si alguien escribe un nickname que ya existe y no tiene el token de esa cuenta, la API lo **rechaza** con `409` y el mensaje «Ese nickname no está disponible». Si lo escribe desde el dispositivo que ya tiene el token de esa cuenta, simplemente sigue dentro de su cuenta.
+
+*Razón:* el muro muestra todos los nicknames; si escribir uno existente diera acceso a la cuenta, cualquiera podría marcar días, ocultar del muro o borrar la cuenta de otra persona. A cambio, quien pierde el celular pierde su cuenta: elige otro nickname o pide a un líder que libere el suyo.
 
 ### Abierto
 
-- ¿Hay menores de edad en el grupo? (pregunta 3 del README). Si los hay, el tratamiento de datos requiere autorización de sus representantes y probablemente cambia el aviso y el flujo de registro.
 - ¿Quién es el **responsable del tratamiento** (la iglesia, un líder concreto)? Es quien aparece en el aviso y recibe las solicitudes de borrado.
-- Ante la pérdida del dispositivo mientras no exista código de recuperación: ¿basta con que un líder borre la cuenta y la persona se registre de nuevo?
 
 ## 4. Operación en capa gratuita
 
@@ -113,9 +127,9 @@ Las demás specs se refieren a esta sección.
 |---|---|
 | Tarea programada | GitHub Action con `schedule` (cron) que hace `curl` al health. Ojo: en repos con 60 días sin actividad, GitHub desactiva los cron; conviene un aviso o revisar de vez en cuando |
 | Pooler | La conexión directa de Supabase suele ser solo IPv6 en el plan gratis, así que el pooler no es solo buena práctica sino necesidad práctica (verificarlo al configurar). Con el pooler en modo transacción, el driver de Go no debe usar sentencias preparadas persistentes (en `pgx`: modo de ejecución simple). Para migraciones y `pg_dump` conviene el pooler en modo sesión |
-| Backups | `pg_dump` en otro cron de GitHub Actions. **El volcado contiene nombres y nicknames:** no subirlo como artefacto público; guardarlo en un lugar privado con retención corta. Probar una restauración al menos una vez |
+| Backups | `pg_dump` en otro cron de GitHub Actions. **El volcado contiene nicknames (e historial de participación):** no subirlo como artefacto público; guardarlo en un lugar privado con retención corta. Probar una restauración al menos una vez |
 | Seguridad en Supabase | Las tablas del esquema `public` quedan expuestas por la API automática de Supabase (PostgREST). Como nadie debe usarla: activar **RLS en todas las tablas sin políticas** y/o desactivar esa API, y conectar la API Go con un rol dedicado |
-| Secretos | Cadena de conexión, secreto para hashear códigos y clave de administrador, solo como variables de entorno del hosting y secretos de GitHub; nunca en el repo (`.env*` ya está en `.gitignore`) |
+| Secretos | Cadena de conexión y clave de administrador, solo como variables de entorno del hosting y secretos de GitHub; nunca en el repo (`.env*` ya está en `.gitignore`) |
 | Desarrollo | Postgres local (por ejemplo con Docker Compose en el repo) y las mismas migraciones |
 
 ### Abierto
@@ -144,12 +158,14 @@ Las demás specs se refieren a esta sección.
 
 **Recomendado:** Cloud Run en una región EE. UU. de capa gratuita, con Supabase en una región cercana de EE. UU. (la costa este es la más próxima a Colombia en latencia razonable); `min-instances: 0`; alerta de presupuesto.
 
-**Abierto:** la elección final entre Cloud Run y Render (pregunta 7 del README). Si el grupo no tiene a quién dejar una tarjeta registrada, Render es la salida sencilla; el costo es el arranque en frío. Esta decisión no cambia el código, solo el despliegue.
+**Delegado:** la elección final entre Cloud Run y Render la toma quien tiene a cargo el despliegue. Si el grupo no tiene a quién dejar una tarjeta registrada, Render es la salida sencilla; el costo es el arranque en frío. Esta decisión no cambia el código, solo el despliegue. Con Render, conviene despertar el servicio antes de la reunión del sábado 14, cuando todos se registrarán a la vez.
 
 Nota técnica independiente del hosting: la API debe calcular fechas con `America/Bogota`. En contenedores mínimos puede faltar la base de zonas horarias; en Go se resuelve incrustándola (`import _ "time/tzdata"`).
 
 ## 6. Fuera de alcance por ahora
 
+- **Peticiones de oración** (funcionalidad aparte y posterior; [05](05-peticiones-de-oracion.md)).
+- Código de recuperación de cuenta.
 - Notificaciones push y correo.
 - Websockets o tiempo real.
 - Login con correo, redes sociales o contraseña.

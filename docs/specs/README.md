@@ -4,13 +4,14 @@ Guía para quien desarrolle la próxima etapa: una nueva página principal, una 
 
 ## Cómo leer estas specs
 
-Son una **guía flexible, no un contrato**. Cada una explica el porqué de sus decisiones para que puedas apartarte con criterio si encuentras algo mejor. En cada spec verás tres niveles:
+Son una **guía flexible, no un contrato**. Cada una explica el porqué de sus decisiones para que puedas apartarte con criterio si encuentras algo mejor. En cada spec verás estos niveles:
 
 | Nivel | Significa |
 |---|---|
 | **Decidido** | Ya se resolvió, con su razón. Cambiarlo requiere conversarlo |
 | **Recomendado** | Es la propuesta, pero se puede cambiar con criterio |
 | **Abierto** | Falta decidir; no se rellenó con suposiciones |
+| **Delegado** | Lo decide quien tiene a cargo esa tarea |
 
 Cada spec termina con «Fuera de alcance por ahora».
 
@@ -20,18 +21,49 @@ Cada spec termina con «Fuera de alcance por ahora».
 |---|---|
 | [00-arquitectura.md](00-arquitectura.md) | Visión general, diagrama, **identidad y privacidad** (transversal), operación en capa gratuita y despliegue |
 | [01-pagina-principal.md](01-pagina-principal.md) | Nueva página principal: secciones, datos estáticos, cómo agregar temas y actividades |
-| [02-reto-7-dias.md](02-reto-7-dias.md) | Reto de 7 días: reglas, rachas, río, muro, qué vive en el dispositivo |
-| [03-api.md](03-api.md) | API en Go: endpoints, token, reglas de dominio, errores, estructura del proyecto |
-| [04-base-de-datos.md](04-base-de-datos.md) | Postgres: tablas, diagrama entidad-relación, restricciones, migraciones, operación |
-| [05-peticiones-de-oracion.md](05-peticiones-de-oracion.md) | **Funcionalidad aparte** del reto, posterior al primer lanzamiento |
+| [02-reto-7-dias.md](02-reto-7-dias.md) | Reto de 7 días: fechas, reglas, rachas, río, muro, qué vive en el dispositivo |
+| [03-api.md](03-api.md) | API en Go: endpoints de identidad y del reto, token, reglas de dominio, errores, estructura del proyecto |
+| [04-base-de-datos.md](04-base-de-datos.md) | Postgres: tablas de identidad y del reto, diagrama entidad-relación, restricciones, migraciones, operación |
+| [05-peticiones-de-oracion.md](05-peticiones-de-oracion.md) | **Funcionalidad aparte**, posterior al primer lanzamiento. Contiene todo lo suyo: reglas, endpoints y tablas |
 
-Orden sugerido: 00 → 01 → 02 → 03 → 04. La 05 se lee cuando se vaya a abordar esa funcionalidad.
+Orden sugerido: 00 → 01 → 02 → 03 → 04. La 05 se lee solo cuando se vaya a abordar esa funcionalidad.
 
-### Una distinción importante
+## Dos funcionalidades distintas: el reto y las peticiones
 
-El **reto de 7 días** y las **peticiones de oración** son funcionalidades diferentes, con alcances diferentes. Comparten solo la identidad (nickname, token, grupo). Por eso las peticiones tienen su propia spec (05), y el primer lanzamiento contiene el reto pero no las peticiones.
+El **reto de 7 días** y las **peticiones de oración** son funcionalidades **completamente distintas**:
 
-### Dónde está la documentación
+| | Reto de 7 días | Peticiones de oración |
+|---|---|---|
+| Spec | [02](02-reto-7-dias.md) (y sus endpoints y tablas en [03](03-api.md) y [04](04-base-de-datos.md)) | [05](05-peticiones-de-oracion.md), y solo esa |
+| Lanzamiento | **Primer lanzamiento** (sábado 14 de noviembre de 2026) | Posterior, sin fecha |
+| Qué guarda el servidor | Solo que el día se completó y si la persona escribió | Texto libre (el cuerpo de la petición) |
+| Página | `/reto-7-dias` (propuesta) | Propia (propuesta `/peticiones`) |
+
+Lo único que comparten es la **identidad** (nickname y token, tabla `users`). No comparten páginas, tablas, endpoints ni lanzamiento, y ninguna depende de la otra. Que el día 6 del reto se llame «Orar por otros» no las conecta.
+
+## Decisiones vigentes
+
+**Identidad y datos**
+- Entrada libre: sin grupos, sin código de invitación, sin contraseña. **«Firmar» el compromiso del reto es escribir el nickname**: eso crea la cuenta.
+- **Nickname de 3 a 7 caracteres** (`a-z`, `0-9`, `_`), para que no quepa un nombre completo. La API **rechaza nicknames vulgares** con una lista de palabras bloqueadas.
+- **El nickname va atado a su token:** un nickname que ya existe se rechaza desde otro dispositivo («no disponible»).
+- `users` guarda solo el nickname y el hash del token. Ni nombres ni respuestas: **en el grupo hay menores de edad**.
+- Cada persona **acepta el aviso de privacidad al completar su primer día**.
+- **Sin código de recuperación** por ahora, para que entrar tenga la menor fricción posible. Los líderes **pueden liberar nicknames**.
+
+**Reto de 7 días (primera edición)**
+- Del **sábado 14 de noviembre** (día 1, en la reunión) al **viernes 20 de noviembre de 2026** (día 7).
+- **Cada día solo se completa ese mismo día** (hora de Bogotá); a medianoche se bloquea. Quien llega tarde solo participa en los días restantes.
+- **La inscripción en el reto se crea al completar el primer día.** Solo quien completó al menos un día cuenta en el río y en la racha del grupo.
+- **Umbral del grupo: 60 %.** Un día cuenta como ganado en equipo si al menos el 60 % de los inscritos lo completó; si no, la racha del grupo vuelve a cero.
+- Retos genéricos con `kind` y `config`; `wrote_note` como booleano sin guardar texto; río del grupo proporcional.
+
+**Delegado**
+- A quien hace la **página del reto**: qué mostrar con 0 días (idea: un personaje fuera del agua, esperando), cómo se ve qué día es hoy y el contador de quien llega tarde.
+- A quien hace la **página principal**: las rutas (dónde queda el pasaporte, slug del reto) y a dónde llevan sus botones.
+- A quien tiene el **despliegue**: Cloud Run o Render.
+
+## Dónde está la documentación
 
 El repo no tenía carpeta de documentación: solo `README.md` y `pasaporte-specs.md` en la raíz (formato `RF-xx`). Se creó `docs/specs/`. Cuando se implemente esta etapa habrá que actualizar el `README.md` raíz, que hoy afirma que no hay base de datos ni cuentas.
 
@@ -41,32 +73,39 @@ El diseño es el PDF «DeepFlow – Inicio y Tema 6.pdf» (4 páginas: 1–2 pá
 
 ## Preguntas abiertas
 
-Pendientes, sin respuesta asumida.
+### Para el lanzamiento del sábado 14
 
-1. ¿El reto arranca el día de la reunión para todos, o ya hay gente haciéndolo por su cuenta?
-2. ¿Cuántas personas tiene el grupo? Define el umbral de la racha del grupo.
-3. ¿Hay menores de edad en el grupo?
-4. ¿Las peticiones de oración las ve todo el grupo o solo los líderes?
-5. ¿Anónima para el grupo o anonimato total?
-6. ¿Va a haber más de un grupo de conexión usando la app?
-7. ¿Cloud Run o Render para la API?
-
-### Preguntas surgidas al explorar el repo y el diseño
-
-Estas no estaban en la lista original; salieron al encajar las specs con lo que existe.
+Ninguna de estas bloquea crear la base de datos: el esquema de [04 §4](04-base-de-datos.md) sirve para cualquier respuesta.
 
 | # | Pregunta | Dónde |
 |---|---|---|
-| 8 | ¿Dónde pasa a vivir el pasaporte (hoy ocupa `/`)? Propuesta: `/cedula-del-cielo` | [01](01-pagina-principal.md) |
-| 9 | ¿A dónde llevan «Quiero unirme», «Guía del tema» y «Abrir tema»? El PDF no incluye la página del tema | [01](01-pagina-principal.md) |
-| 10 | Quien llega tarde al reto: ¿qué pasa con los días anteriores a su llegada? | [02](02-reto-7-dias.md) |
-| 11 | ¿Qué nivel del río se muestra con 0 días completados? | [02](02-reto-7-dias.md) |
-| 12 | «La racha continúa con los retos siguientes»: ¿cuentan los días entre retos? ¿Y el pasaporte, que es local? | [02](02-reto-7-dias.md) |
-| 13 | ¿Cómo se hace la firma del compromiso (dibujada, escrita)? | [02](02-reto-7-dias.md) |
-| 14 | ¿La página del reto se ve sin código, en modo solo lectura? | [02](02-reto-7-dias.md) |
-| 15 | ¿Quién crea grupos, retos y códigos (script de siembra o rutas de administración)? ¿Una clave de administrador por líder o una compartida? | [03](03-api.md) |
-| 16 | ¿Los despliegues *preview* de Vercel entran en la lista de CORS? | [03](03-api.md) |
-| 17 | ¿Qué claves lleva `challenges.config`? ¿Qué herramienta de migraciones? | [04](04-base-de-datos.md) |
-| 18 | ¿Dónde se guardan los volcados de respaldo y por cuánto tiempo? | [00](00-arquitectura.md) |
-| 19 | ¿Quién es el responsable del tratamiento de datos (para el aviso y los borrados)? | [00](00-arquitectura.md) |
-| 20 | ¿Qué pasa si alguien pierde el celular antes de que exista el código de recuperación? | [00](00-arquitectura.md) |
+| 1 | ¿Quién es el **responsable de los datos** que aparece en el aviso de privacidad y recibe las solicitudes de borrado? | [00 §3](00-arquitectura.md) |
+| 2 | La **lista de palabras bloqueadas** para nicknames: alguien tiene que armarla y probarla con nombres comunes | [03 §5](03-api.md) |
+
+### Pueden esperar
+
+| # | Pregunta | Dónde |
+|---|---|---|
+| 3 | «La racha continúa con los retos siguientes»: ¿cuentan los días entre retos? ¿Y el pasaporte, que es local? | [02 §4](02-reto-7-dias.md) |
+| 4 | ¿Una clave de administrador por líder o una compartida? ¿Los retos siguientes se crean con script de siembra o con rutas de administración? | [03](03-api.md) |
+| 5 | ¿Los despliegues *preview* de Vercel entran en la lista de CORS? | [03 §7](03-api.md) |
+| 6 | ¿Qué herramienta de migraciones? | [04 §5](04-base-de-datos.md) |
+| 7 | ¿Dónde se guardan los volcados de respaldo y por cuánto tiempo? | [00 §4](00-arquitectura.md) |
+| 8 | Peticiones de oración: ¿las ve todo el grupo o solo los líderes? ¿Anónima para el grupo o anonimato total? ¿Pueden publicar los menores? | [05](05-peticiones-de-oracion.md) |
+
+### Resueltas
+
+- **Fecha de inicio:** sábado 14 de noviembre de 2026; cierra el viernes 20.
+- **Menores de edad:** sí hay. Se guarda solo un nickname corto y la participación; cada quien acepta el aviso al completar su primer día.
+- **Quien llega tarde:** los días se bloquean a medianoche; solo participa en los días restantes.
+- **Umbral del grupo:** 60 %, evaluado cada día.
+- **Firma del compromiso:** es escribir el nickname (registrarse).
+- **Formato del nickname:** 3 a 7 caracteres, con filtro de vulgaridades.
+- **Liberar nicknames:** permitido para los líderes.
+- **Nickname que ya existe:** va atado a su token; desde otro dispositivo se rechaza con «Ese nickname no está disponible».
+- **Grupos:** una sola comunidad y entrada libre; no hay tabla de grupos ni código de invitación. Si cambia, se agrega de forma aditiva ([04](04-base-de-datos.md)).
+- **Página del reto:** visible para cualquiera; avance y muro solo para registrados.
+- **Código de recuperación:** no se implementa por ahora.
+- **0 días, día actual y contador de quien llega tarde:** delegado a quien hace la página del reto.
+- **Rutas y botones de la página principal:** delegado a quien hace esa página.
+- **Cloud Run o Render:** delegado a quien tiene a cargo el despliegue.
