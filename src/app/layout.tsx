@@ -7,8 +7,8 @@ const caveat = Caveat_Brush({ subsets: ["latin"], weight: "400", variable: "--fo
 const nunito = Nunito({ subsets: ["latin"], variable: "--font-ui", display: "swap" });
 
 export const metadata: Metadata = {
-  title: "Pasaporte del Cielo | Deepflow",
-  description: "Una identidad que no se pierde, se vive.",
+  title: "DeepFlow | Grupo de conexión",
+  description: "Conecta con Dios y con otros, cada vez más profundo.",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
