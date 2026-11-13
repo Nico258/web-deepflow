@@ -1,11 +1,10 @@
-import Image from "next/image";
 import Link from "next/link";
 import {
-  ArrowRight,
   ChatCircleDots,
   Heart,
   HouseSimple,
 } from "@phosphor-icons/react/dist/ssr";
+import { SiteHeader } from "@/components/site-header";
 
 const riverSteps = [
   { title: "Hasta los tobillos", verse: "Ez 47:3" },
@@ -15,7 +14,7 @@ const riverSteps = [
 ];
 
 const leaders = ["Laura Diaz", "Paola Morales", "Valentina Perico", "Ivan Camilo"];
-const creators = ["Nico", "Johny", "Dani"];
+const developers = ["Nico", "Johny", "Dani"];
 
 const practices = [
   {
@@ -41,27 +40,7 @@ const practices = [
 export default function AboutPage() {
   return (
     <div className="home-page about-page">
-      <header className="topbar home-topbar">
-        <Link className="brand home-brand" href="/" aria-label="DeepFlow, inicio">
-          <Image
-            className="brand-mark"
-            src="/deepflowlogo.png"
-            alt=""
-            width={48}
-            height={42}
-            priority
-          />
-          <span className="brand-name">DeepFlow</span>
-        </Link>
-        <nav className="home-nav" aria-label="Navegación principal">
-          <Link href="/">Inicio</Link>
-          <Link className="active" href="/quienes-somos" aria-current="page">
-            Quiénes somos
-          </Link>
-          <Link href="/#actividades">Actividades</Link>
-        </nav>
-        <span className="top-note home-top-note">Ezequiel 47:1-12</span>
-      </header>
+      <SiteHeader />
 
       <main className="about-main">
         <section className="about-hero" aria-labelledby="about-title">
@@ -80,7 +59,7 @@ export default function AboutPage() {
 
         <section className="about-river about-river-box" aria-labelledby="river-title">
           <div className="about-river-copy">
-            <p className="home-section-kicker">El nombre · Ezequiel 47:1-12</p>
+            <p className="home-section-kicker">Ezequiel 47:1-12</p>
             <h2 id="river-title">Un río que se vuelve más profundo con cada paso</h2>
             <p>
               En el río de Ezequiel el agua sube del tobillo a la rodilla, a la
@@ -123,27 +102,26 @@ export default function AboutPage() {
           </ul>
         </section>
 
-        <section className="about-team about-creators" aria-labelledby="creators-title">
-          <p className="home-section-kicker">Equipo creativo</p>
-          <h2 id="creators-title">Creadores</h2>
+        <section className="about-team about-creators" aria-labelledby="developers-title">
+          <p className="home-section-kicker">Developers</p>
+          <h2 id="developers-title">Developers</h2>
           <ul className="about-people-list about-creators-list">
-            {creators.map((name) => (
+            {developers.map((name) => (
               <li key={name}>{name}</li>
             ))}
           </ul>
         </section>
 
-        <Link className="about-back-link" href="/">
-          Volver al inicio <ArrowRight aria-hidden="true" size={17} />
-        </Link>
       </main>
 
       <footer className="home-footer">
         <Link className="brand-name" href="/" aria-label="DeepFlow, inicio">
           DeepFlow
         </Link>
-        <span>Tengo un propósito y nadie me separa de Dios</span>
-        <small>© 2026 DeepFlow</small>
+        <div className="home-footer-meta">
+          <span>Tengo un propósito y nadie me separa de Dios</span>
+          <small>© 2026 DeepFlow</small>
+        </div>
       </footer>
     </div>
   );

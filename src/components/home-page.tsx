@@ -1,28 +1,11 @@
-import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, Clock, MapPin } from "@phosphor-icons/react/dist/ssr";
+import { SiteHeader } from "@/components/site-header";
 
 export default function HomePage() {
   return (
     <div className="home-page">
-      <header className="topbar home-topbar">
-        <Link className="brand home-brand" href="/" aria-label="DeepFlow, inicio">
-          <Image
-            className="brand-mark"
-            src="/deepflowlogo.png"
-            alt=""
-            width={48}
-            height={42}
-            priority
-          />
-          <span className="brand-name">DeepFlow</span>
-        </Link>
-        <nav className="home-nav" aria-label="Navegación principal">
-          <Link href="/quienes-somos">Quiénes somos</Link>
-          <a href="#actividades">Actividades</a>
-        </nav>
-        <span className="top-note home-top-note">Ezequiel 47:1-12</span>
-      </header>
+      <SiteHeader />
 
       <main className="home-main">
         <section className="home-hero" aria-labelledby="home-title">
@@ -38,9 +21,6 @@ export default function HomePage() {
               DeepFlow es un grupo de conexión de la iglesia. Aquí compartimos
               y crecemos juntos, avanzando cada vez más hacia lo profundo.
             </p>
-            <a className="primary-btn home-primary-btn" href="#actividades">
-              Ver actividades <ArrowRight aria-hidden="true" size={17} />
-            </a>
           </div>
         </section>
 
@@ -94,7 +74,7 @@ export default function HomePage() {
             <Clock aria-hidden="true" size={20} />
             <span>
               <span className="home-logistics-label">Día y hora</span>
-              Sábados a las 3
+              Sábados a las 3:00 pm
             </span>
           </p>
           <p>
@@ -111,8 +91,10 @@ export default function HomePage() {
         <Link className="brand-name" href="/" aria-label="DeepFlow, inicio">
           DeepFlow
         </Link>
-        <span>Tengo un propósito y nadie me separa de Dios</span>
-        <small>© 2026 DeepFlow</small>
+        <div className="home-footer-meta">
+          <span>Tengo un propósito y nadie me separa de Dios</span>
+          <small>© 2026 DeepFlow</small>
+        </div>
       </footer>
     </div>
   );

@@ -14,16 +14,16 @@ La página principal presenta el grupo y las actividades disponibles. Su conteni
 
 | # | Sección | Contenido | Notas |
 |---|---|---|---|
-| 1 | Navegación | Marca DeepFlow; enlaces **Quiénes somos** y **Actividades**; etiqueta «Ezequiel 47:1-12» | «Quiénes somos» abre su página; Actividades es un ancla |
-| 2 | Portada | Etiqueta del grupo, titular «Conecta con Dios y con otros, cada vez más profundo», descripción y botón **Ver actividades** | Sin botón para unirse ni tarjeta de tema actual |
+| 1 | Encabezado | Marca DeepFlow y etiqueta «Ezequiel 47:1-12» | Encabezado compartido por la portada, «Quiénes somos» y el pasaporte |
+| 2 | Portada | Etiqueta del grupo, titular «Conecta con Dios y con otros, cada vez más profundo» y descripción | Sin botones ni tarjeta de tema actual |
 | 3 | Quiénes somos | Banner «Un grupo que avanza junto hacia lo profundo», una breve descripción y enlace **Conocer al grupo** | Abre `/quienes-somos` |
 | 4 | Actividades | Una sola tarjeta: **Pasaporte del Cielo**, con enlace **Abrir pasaporte** | No mostrar el reto de 7 días ni actividades próximas hasta que estén disponibles |
-| 5 | Información práctica | **Sábados a las 3**; **SuPresencia, sede Castellana, salón teatro 303** | Franja breve sin sección de reuniones, contacto ni botón |
+| 5 | Información práctica | **Sábados a las 3:00 pm**; **SuPresencia, sede Castellana, salón teatro 303** | Franja breve sin sección de reuniones, contacto ni botón |
 | 6 | Pie de página | Marca, lema, «© 2026 DeepFlow» | |
 
 No se muestra la sección «Lo que estudiamos en cada tema» ni se agrega contenido de temas o reuniones. Se conserva solo la información práctica de día, hora y lugar solicitada.
 
-La página `/quienes-somos` presenta la identidad de DeepFlow, la inspiración del río de Ezequiel en un recuadro propio, lo que hacemos, los nombres de las líderes (Laura Diaz, Paola Morales, Valentina Perico e Ivan Camilo) y de los creadores (Nico, Johny y Dani). Los nombres se muestran sin campos ni espacios para fotografías.
+La página `/quienes-somos` presenta la identidad de DeepFlow, la inspiración del río de Ezequiel en un recuadro propio, lo que hacemos, los nombres de las líderes (Laura Diaz, Paola Morales, Valentina Perico e Ivan Camilo) y de los developers (Nico, Johny y Dani). Los nombres se muestran sin campos ni espacios para fotografías.
 
 ## 3. Cómo ampliar la página más adelante
 

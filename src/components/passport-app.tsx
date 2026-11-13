@@ -5,6 +5,7 @@ import { Camera, Check, Crown, EnvelopeSimple, EnvelopeSimpleOpen, Globe, Plus, 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import Image from "next/image";
+import { SiteHeader } from "@/components/site-header";
 import { getVerse, stamps } from "@/data/stamps";
 import { themeFor, themes } from "@/data/themes";
 import { badges, sanitizeBadges, type BadgeId } from "@/data/badges";
@@ -307,13 +308,7 @@ export default function PassportApp() {
 
   return (
     <div className="app-shell">
-      <header className="topbar">
-        <div className="brand">
-          <Image src="/deepflowlogo.png" alt="" width={50} height={42} priority className="brand-mark" />
-          <span className="brand-name">DeepFlow</span>
-        </div>
-        <div className="top-note">Ezequiel 47:1-12</div>
-      </header>
+      <SiteHeader />
 
       <main className="main-wrap">
         <div className="intro">
