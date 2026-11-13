@@ -37,7 +37,7 @@ El **reto de 7 días** y las **peticiones de oración** son funcionalidades **co
 | Spec | [02](02-reto-7-dias.md) (y sus endpoints y tablas en [03](03-api.md) y [04](04-base-de-datos.md)) | [05](05-peticiones-de-oracion.md), y solo esa |
 | Lanzamiento | **Primer lanzamiento** (sábado 14 de noviembre de 2026) | Posterior, sin fecha |
 | Qué guarda el servidor | Solo que el día se completó y si la persona escribió | Texto libre (el cuerpo de la petición) |
-| Página | `/reto-7-dias` (propuesta) | Propia (propuesta `/peticiones`) |
+| Página | `/reto-7-dias` | Propia (propuesta `/peticiones`) |
 
 Lo único que comparten es la **identidad** (nickname y token, tabla `users`). No comparten páginas, tablas, endpoints ni lanzamiento, y ninguna depende de la otra. Que el día 6 del reto se llame «Orar por otros» no las conecta.
 
@@ -60,8 +60,9 @@ Lo único que comparten es la **identidad** (nickname y token, tabla `users`). N
 
 **Delegado**
 - A quien hace la **página del reto**: qué mostrar con 0 días (idea: un personaje fuera del agua, esperando), cómo se ve qué día es hoy y el contador de quien llega tarde.
-- A quien hace la **página principal**: las rutas (dónde queda el pasaporte, slug del reto) y a dónde llevan sus botones.
 - A quien tiene el **despliegue**: Cloud Run o Render.
+
+**Rutas (ya implementadas en la página principal):** `/` página principal, `/quienes-somos`, `/cedula-del-cielo` (pasaporte) y, cuando esté listo, `/reto-7-dias`. El slug del reto en la API y la base es `oracion-7-dias` ([01 §4](01-pagina-principal.md)).
 
 ## Dónde está la documentación
 
@@ -107,5 +108,5 @@ Ninguna de estas bloquea crear la base de datos: el esquema de [04 §4](04-base-
 - **Página del reto:** visible para cualquiera; avance y muro solo para registrados.
 - **Código de recuperación:** no se implementa por ahora.
 - **0 días, día actual y contador de quien llega tarde:** delegado a quien hace la página del reto.
-- **Rutas y botones de la página principal:** delegado a quien hace esa página.
+- **Rutas y botones de la página principal:** resueltos en la página principal ([01](01-pagina-principal.md)).
 - **Cloud Run o Render:** delegado a quien tiene a cargo el despliegue.

@@ -82,7 +82,7 @@ Otro tipo de reto (p. ej. un quiz con puntaje máximo) definiría sus propias cl
 
 | Campo | Valor |
 |---|---|
-| `slug` | `oracion-7-dias` (pendiente unificar con la ruta del front, ver [01 §4](01-pagina-principal.md)) |
+| `slug` | `oracion-7-dias` (la página vive en `/reto-7-dias`; ver [01 §4](01-pagina-principal.md)) |
 | `kind` | `daily_steps` |
 | `starts_on` | `2026-11-14` (sábado; el día 7 es el viernes `2026-11-20`) |
 | `config` | `{ "total_days": 7, "group_streak_threshold": 0.6 }` |

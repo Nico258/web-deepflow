@@ -18,13 +18,17 @@ Para compilar una versión de producción, ejecuta `pnpm build`; para servirla, 
 ## Estructura
 
 - `src/app`: rutas y estilos globales.
-- `src/components`: interfaz del editor del pasaporte.
+- `src/app/page.tsx`: página principal del grupo.
+- `src/app/quienes-somos`: página con la identidad y el equipo de DeepFlow.
+- `src/app/cedula-del-cielo`: actividad del pasaporte.
+- `src/components`: interfaz del editor del pasaporte y componentes de la página principal.
 - `src/data`: contenido de los doce sellos y sus versículos (Nueva Traducción Viviente, © Tyndale House Foundation; la web muestra ese aviso junto a cada versículo).
 - `src/data/themes.ts`: paletas completas del pasaporte (borde, tinta, papel, líneas y acentos).
 - `src/data/badges.ts` y `src/components/badge-icon.tsx`: las imágenes de «Tus gustos» (hasta 2 por pasaporte).
 - `pasaporte-specs.md`: especificaciones funcionales de la actividad.
+- `docs/specs/01-pagina-principal.md`: alcance de la página principal.
 
-El pasaporte se dibuja en un lienzo fijo de 750 × 1500 px (constante `PASSPORT_H` en `passport-app.tsx`) que se escala a la pantalla, así la vista previa y la imagen exportada son idénticas.
+La página principal vive en `/`, la presentación del grupo en `/quienes-somos` y el pasaporte en `/cedula-del-cielo`. El pasaporte se dibuja en un lienzo fijo de 750 × 1500 px (constante `PASSPORT_H` en `passport-app.tsx`) que se escala a la pantalla, así la vista previa y la imagen exportada son idénticas.
 
 El progreso se conserva en IndexedDB en el navegador del dispositivo. Las fotos no se envían a ningún servicio. El reparto aleatorio de sobres se crea una vez y también queda guardado localmente. No hay base de datos ni cuentas en esta versión.
 
