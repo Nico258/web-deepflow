@@ -9,6 +9,7 @@ const nunito = Nunito({ subsets: ["latin"], variable: "--font-ui", display: "swa
 export const metadata: Metadata = {
   title: "DeepFlow | Grupo de conexión",
   description: "Conecta con Dios y con otros, cada vez más profundo.",
+  icons: { icon: "/deepflowlogo-mini.png" },
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

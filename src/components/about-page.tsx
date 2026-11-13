@@ -1,9 +1,9 @@
-import Link from "next/link";
 import {
   ChatCircleDots,
   Heart,
   HouseSimple,
 } from "@phosphor-icons/react/dist/ssr";
+import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 
 const riverSteps = [
@@ -114,15 +114,7 @@ export default function AboutPage() {
 
       </main>
 
-      <footer className="home-footer">
-        <Link className="brand-name" href="/" aria-label="DeepFlow, inicio">
-          DeepFlow
-        </Link>
-        <div className="home-footer-meta">
-          <span>Tengo un propósito y nadie me separa de Dios</span>
-          <small>© 2026 DeepFlow</small>
-        </div>
-      </footer>
+      <SiteFooter />
     </div>
   );
 }
