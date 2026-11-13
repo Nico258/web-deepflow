@@ -59,7 +59,7 @@ Los textos entre corchetes del diseño (`[Título del tema]`, `[Día y hora de l
 | `/quienes-somos` | Quiénes somos |
 | `/cedula-del-cielo` | Pasaporte del Cielo |
 
-La ruta `/reto-7-dias` se podrá agregar cuando ese reto esté creado.
+La ruta `/reto-7-dias` se podrá agregar cuando ese reto esté creado. El reto se identifica en la API y en la base con el slug `oracion-7-dias` (el mismo de `src/data/challenges/oracion-7-dias.ts`): la ruta es la dirección pública de la página y el slug es el identificador del reto, así que no hace falta que coincidan.
 
 **Un efecto a vigilar:** el pasaporte guarda su progreso en IndexedDB del navegador. Cambiar su ruta **no** pierde datos (IndexedDB es por origen, no por ruta), pero sí rompe enlaces ya compartidos a `/`: quien tenga el enlace llegará a la página principal y tendrá que pasar por la tarjeta. Aceptable con ~50 personas, pero conviene avisarlo.
 
@@ -74,3 +74,4 @@ La ruta `/reto-7-dias` se podrá agregar cuando ese reto esté creado.
 - Sección de reuniones, contacto o inscripción.
 - Mostrar estado del grupo (río del grupo, rachas) en la página principal.
 - Buscador, blog, i18n.
+- Enlace o sección de **peticiones de oración**: es una funcionalidad aparte del reto y posterior a este lanzamiento ([05](05-peticiones-de-oracion.md)). El reto de 7 días no tiene relación con ella.
