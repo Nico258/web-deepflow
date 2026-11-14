@@ -32,6 +32,8 @@ export default function ChallengeApp() {
   const defaultDay = Math.min(Math.max(c.dayNumber, 1), challenge.totalDays);
   const selected = picked ?? defaultDay;
   // La imagen se habilita al completar el último día o cuando el reto ya se cerró.
+  // Días que todavía se pueden completar: el de hoy (si falta) y los que no han llegado.
+  const remaining = c.status === "finished" ? 0 : states.filter((s) => s === "today" || s === "future").length;
   const canShare = c.completedCount > 0 && (c.isCompleted(challenge.totalDays) || c.status === "finished");
 
   return (
@@ -116,6 +118,7 @@ export default function ChallengeApp() {
             completed={c.completedCount}
             canShare={canShare}
             status={c.status}
+            remaining={remaining}
             onReset={() => {
               c.reset();
               setPicked(null);
@@ -343,6 +346,7 @@ function ProgressCard({
   completed,
   canShare,
   status,
+  remaining,
   onReset,
 }: {
   ready: boolean;
@@ -350,6 +354,7 @@ function ProgressCard({
   completed: number;
   canShare: boolean;
   status: ChallengeStatus | null;
+  remaining: number;
   onReset: () => void;
 }) {
   const [confirming, setConfirming] = useState(false);
@@ -361,8 +366,10 @@ function ProgressCard({
   let hint: string;
   if (!next) hint = "Completaste los 7 días. ¡Llegaste a lo más profundo!";
   else if (status === "not_started") hint = `El reto empieza el ${formatLong(challenge.startsOn)}.`;
-  else if (status === "finished") hint = "El reto ya se cerró.";
+  else if (status === "finished") hint = "El reto terminó. ¡Gracias por ser parte!";
+  else if (remaining === 0) hint = "Completaste el último día. ¡Gracias por ser parte!";
   else if (!level) hint = "Completa el día de hoy para meter los pies al agua.";
+  else if (missing > remaining) hint = `${remaining === 1 ? "Queda 1 día" : `Quedan ${remaining} días`} del reto: cada uno suma.`;
   else hint = `${missing === 1 ? "Falta 1 día" : `Faltan ${missing} días`} para llegar ${next.level === 4 ? "a un río para nadar" : next.title.toLowerCase()}.`;
 
   return (
