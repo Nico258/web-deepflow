@@ -226,7 +226,8 @@ a.brand{text-decoration:none}
 .home-activity-card--reto:hover{box-shadow:0 10px 24px #35604f22}
 .home-activity-days{display:flex;align-items:center;gap:5px;margin-top:10px;position:relative}
 .home-activity-days:before{content:"";position:absolute;left:8px;right:8px;top:50%;border-top:1px dashed #9dbcae}
-.home-activity-days span{width:19px;height:19px;display:grid;place-items:center;border:1px solid #a9c6b8;border-radius:50%;background:#fbfdfc;color:#4f7668;font-size:9px;font-weight:900;position:relative}
+/* padding-top: los números de Nunito quedan 1,25 px arriba del centro de su caja de línea */
+.home-activity-days span{width:19px;height:19px;display:grid;place-items:center;padding-top:2.5px;border:1px solid #a9c6b8;border-radius:50%;background:#fbfdfc;color:#4f7668;font-size:9px;font-weight:900;line-height:1;position:relative}
 .home-activity-days span.is-filled{border-color:#4f7668;background:#4f7668;color:#fff}
 .home-activity-meta{margin-top:7px;color:#4f7668;font-size:11px;font-weight:800;letter-spacing:.02em}
 .home-activity-meta:first-letter{text-transform:uppercase}
