@@ -1,8 +1,12 @@
 import Link from "next/link";
 import { ArrowRight, ArrowSquareOut, Clock, MapPin } from "@phosphor-icons/react/dist/ssr";
+import { ActivityCarousel } from "@/components/activity-carousel";
+import { ChallengeDayDots } from "@/components/challenge-day-dots";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
+import { challenge } from "@/data/challenges/oracion-7-dias";
 import { meeting, motto } from "@/data/site";
+import { formatLong } from "@/lib/challenge/dates";
 
 export default function HomePage() {
   return (
@@ -44,20 +48,34 @@ export default function HomePage() {
           <p className="home-section-kicker">Contenido interactivo</p>
           <h2 id="activities-title">Para vivir cada tema entre reuniones</h2>
           <p className="home-activities-intro">Retos y dinámicas interactivas que acompañan los temas.</p>
-          <Link className="home-activity-card" href="/cedula-del-cielo">
-            <span className="home-activity-title">Pasaporte del Cielo</span>
-            <span className="home-activity-description">
-              Personaliza tu pasaporte, abre sobres y pega los 12 sellos de tu identidad eterna.
-            </span>
-            <span className="home-activity-progress" aria-hidden="true">
-              <span />
-              <span />
-              <span />
-            </span>
-            <span className="home-activity-link">
-              Abrir pasaporte <ArrowRight aria-hidden="true" size={17} />
-            </span>
-          </Link>
+          <ActivityCarousel label="Actividades">
+            <Link className="home-activity-card home-activity-card--reto" href="/hablo-con-dios">
+              <span className="home-activity-title">{challenge.theme}</span>
+              <span className="home-activity-description">
+                Un reto de 7 días para separar al menos 5 minutos y hablar con Dios, y ver cómo el grupo avanza
+                junto.
+              </span>
+              <ChallengeDayDots startsOn={challenge.startsOn} totalDays={challenge.totalDays} />
+              <span className="home-activity-meta">Desde el {formatLong(challenge.startsOn)}</span>
+              <span className="home-activity-link">
+                Ir al reto <ArrowRight aria-hidden="true" size={17} />
+              </span>
+            </Link>
+            <Link className="home-activity-card" href="/cedula-del-cielo">
+              <span className="home-activity-title">Pasaporte del Cielo</span>
+              <span className="home-activity-description">
+                Personaliza tu pasaporte, abre sobres y pega los 12 sellos de tu identidad eterna.
+              </span>
+              <span className="home-activity-progress" aria-hidden="true">
+                <span />
+                <span />
+                <span />
+              </span>
+              <span className="home-activity-link">
+                Abrir pasaporte <ArrowRight aria-hidden="true" size={17} />
+              </span>
+            </Link>
+          </ActivityCarousel>
         </section>
 
         <section className="home-about" aria-labelledby="about-title">

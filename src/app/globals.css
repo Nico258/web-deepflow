@@ -213,7 +213,7 @@ a.brand{text-decoration:none}
 .home-activities{padding:0 0 34px}
 .home-activities h2,.home-about h2{margin:0;color:var(--navy);font:600 clamp(26px,3vw,36px)/1.13 var(--font-display);letter-spacing:-.02em}
 .home-activities-intro{max-width:570px;margin:8px 0 16px;color:var(--muted);font-size:13px;line-height:1.6}
-.home-activity-card{width:calc((100% - 18px)/3);min-height:152px;display:grid;justify-items:start;align-content:start;padding:18px 20px;border:1px solid #e9d8b1;border-radius:15px;background:linear-gradient(115deg,#f8edcf,#fbf6e8 82%);color:var(--navy);text-decoration:none;transition:transform .2s,box-shadow .2s}
+.home-activity-card{width:100%;height:100%;min-height:152px;display:grid;justify-items:start;align-content:start;padding:18px 20px;border:1px solid #e9d8b1;border-radius:15px;background:linear-gradient(115deg,#f8edcf,#fbf6e8 82%);color:var(--navy);text-decoration:none;transition:transform .2s,box-shadow .2s}
 .home-activity-card:hover{transform:translateY(-3px);box-shadow:0 10px 24px #6b573222}
 .home-activity-title{color:var(--navy);font:600 23px/1.15 var(--font-display)}
 .home-activity-description{max-width:450px;margin-top:7px;color:var(--muted);font-size:12px;line-height:1.55}
@@ -221,6 +221,26 @@ a.brand{text-decoration:none}
 .home-activity-progress span{width:17px;height:17px;border:1px dashed #b6c4ca;border-radius:50%;background:#fffc}
 .home-activity-progress span:first-child{border:1px solid #c69a4a;background:#f4dfaa}
 .home-activity-link{display:inline-flex;align-items:center;gap:7px;margin-top:12px;color:var(--navy);font-size:12px;font-weight:900}
+.home-activity-card--reto{border-color:#c9ddd2;background:linear-gradient(115deg,#dcece4,#f2f8f4 82%)}
+.home-activity-card--reto:hover{box-shadow:0 10px 24px #35604f22}
+.home-activity-days{display:flex;align-items:center;gap:5px;margin-top:10px;position:relative}
+.home-activity-days:before{content:"";position:absolute;left:8px;right:8px;top:50%;border-top:1px dashed #9dbcae}
+.home-activity-days span{width:19px;height:19px;display:grid;place-items:center;border:1px solid #a9c6b8;border-radius:50%;background:#fbfdfc;color:#4f7668;font-size:9px;font-weight:900;position:relative}
+.home-activity-days span.is-filled{border-color:#4f7668;background:#4f7668;color:#fff}
+.home-activity-meta{margin-top:7px;color:#4f7668;font-size:11px;font-weight:800;letter-spacing:.02em}
+.home-activity-meta:first-letter{text-transform:uppercase}
+
+.activity-carousel{position:relative}
+.activity-carousel-track{position:relative;display:grid;grid-auto-flow:column;grid-auto-columns:58%;gap:14px;overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x mandatory;scroll-padding:0 26px;scrollbar-width:none;margin:-6px -26px;padding:6px 26px 14px}
+.activity-carousel-track::-webkit-scrollbar{display:none}
+.activity-carousel-slide{scroll-snap-align:start;min-width:0}
+.activity-carousel-controls{display:flex;align-items:center;gap:10px;margin-top:6px}
+.activity-carousel-arrow{width:32px;height:32px;display:grid;place-items:center;border:1px solid #d6dde2;border-radius:50%;background:#fffdf9;color:var(--navy);transition:background .2s,opacity .2s}
+.activity-carousel-arrow:hover:not(:disabled){background:#e8f0f7}
+.activity-carousel-arrow:disabled{opacity:.35;cursor:default}
+.activity-carousel-dots{display:flex;gap:6px}
+.activity-carousel-dots button{width:7px;height:7px;padding:0;border:0;border-radius:99px;background:#c7d2da;transition:width .25s,background .25s}
+.activity-carousel-dots button.is-active{width:20px;background:var(--navy)}
 
 .home-about{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:24px;margin:0 0 40px;padding:25px 30px;border:1px solid #d3e1ec;border-radius:17px;background:#e8f0f7}
 .home-about h2{font-size:clamp(20px,2.4vw,27px)}
@@ -276,7 +296,8 @@ a.brand{text-decoration:none}
   .home-logistics{grid-template-columns:1fr;gap:14px;margin-bottom:26px;padding:15px}
   .home-activities{padding-bottom:26px}
   .home-activities h2{font-size:29px}
-  .home-activity-card{width:100%;max-width:400px;min-height:0;padding:18px 16px}
+  .home-activity-card{min-height:0;padding:18px 16px}
+  .activity-carousel-track{grid-auto-columns:86%;gap:12px;margin:-6px -14px;padding:6px 14px 12px;scroll-padding:0 14px}
   .home-activity-title{font-size:22px}
   .home-about{grid-template-columns:1fr;gap:12px;margin-bottom:28px;padding:20px}
   .home-about h2{font-size:23px}
@@ -295,4 +316,150 @@ a.brand{text-decoration:none}
   .about-people-list{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
   .about-people-list li{min-height:48px;padding:10px 12px;font-size:13px}
   .about-credits{margin-bottom:28px}
+}
+
+/* ───────── Reto de 7 días ───────── */
+.reto-kicker{margin:0 0 8px;color:#4e7897;font-size:10px;font-weight:900;letter-spacing:.16em;text-transform:uppercase}
+.reto-kicker-gold{color:#9a7432}
+.reto-kicker-green{color:#4f7668}
+.reto-hint{display:flex;gap:6px;align-items:flex-start;margin:7px 0 0;color:#6e7f8f;font-size:12px;line-height:1.55}
+.reto-hint svg{flex:none;margin-top:3px;color:#4f7668}
+.reto-error{margin:8px 0 0;color:#a2442f;font-size:13px;font-weight:700}
+.reto-field-label{display:block;margin:14px 0 6px;color:#526a7e;font-size:10px;font-weight:900;letter-spacing:.14em;text-transform:uppercase}
+
+.reto-layout{display:grid;grid-template-columns:minmax(0,1fr) 270px;gap:22px;align-items:start}
+.reto-primary{display:grid;gap:20px;min-width:0}
+
+/* Compromiso */
+.reto-commitment{padding:26px 26px 24px;border:1.5px solid var(--navy);border-radius:18px;background:linear-gradient(140deg,#f8edcf,#fbf6e8 70%);box-shadow:0 10px 26px #6b573218}
+.reto-commitment-text{margin:0;color:var(--navy);font:500 clamp(21px,2.4vw,26px)/1.3 var(--font-display)}
+.reto-commitment-note{margin:8px 0 0;color:#6e7f8f;font-size:13px}
+
+.reto-name{margin-top:4px}
+.reto-name .reto-field-label{margin-top:18px}
+.reto-name-input{width:min(320px,100%);height:50px;padding:0 2px;border:0;border-bottom:1.5px solid var(--navy);border-radius:0;background:transparent;color:#2f78ad;font:400 34px/50px var(--font-script);outline:none}
+.reto-name-input::placeholder{color:#8b98a3;font-size:26px}
+.reto-name-input:focus-visible{border-bottom-color:#2f78ad;box-shadow:0 2px 0 #2f78ad}
+.reto-warning{margin:14px 0 0;padding:10px 13px;border-radius:10px;background:#fbeee9;color:#a2442f;font-size:13px;font-weight:700;line-height:1.5}
+.reto-plan{margin-top:22px}
+.reto-plan-head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:4px 14px}
+.reto-plan-head .reto-kicker{margin:0;color:#526a7e}
+.reto-plan-count{margin:0;color:#2f78ad;font-size:12px;font-weight:900}
+.reto-plan-count span{color:#6e7f8f;font-weight:700}
+
+.reto-dots{container-type:inline-size;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px;margin:10px 0 18px;padding:10px 0 0;list-style:none}
+.reto-dot{position:relative;width:100%;height:38px;display:grid;place-items:center;padding:0;border:1.5px solid #d3dbe0;border-radius:99px;background:#fff;color:#8a97a2;font-size:12px;font-weight:900;letter-spacing:.04em;white-space:nowrap;transition:transform .15s,box-shadow .15s}
+.reto-dot:hover{transform:translateY(-1px)}
+.reto-dot-short{display:none}
+@container (max-width:470px){.reto-dot-long{display:none}.reto-dot-short{display:inline}}
+.reto-dot.is-done{background:#4f7668;border-color:#4f7668;color:#fff}
+.reto-dot.is-missed{background:#eceff1;border-color:#e1e5e8;color:#b0b9c0}
+.reto-dot.is-today{border:2px solid #2f78ad;color:#2f78ad;box-shadow:0 0 0 4px #2f78ad1f}
+.reto-dot.is-today.is-done{color:#fff}
+.reto-dot.is-selected:after{content:"";position:absolute;left:50%;bottom:-12px;border:6px solid transparent;border-top-color:var(--navy);transform:translateX(-50%)}
+.reto-dot-badge{position:absolute;top:-9px;left:50%;padding:1px 6px;border-radius:99px;background:#c69a4a;color:#fff;font-size:8.5px;letter-spacing:.06em;text-transform:uppercase;transform:translateX(-50%)}
+
+.reto-day-panel{padding:20px 22px 22px;border:1px solid #e9d8b1;border-radius:15px;background:#fff}
+.reto-verse{margin:14px 0 0;padding:10px 14px;border-left:3px solid var(--gold);border-radius:0 10px 10px 0;background:#fdf8ec}
+.reto-verse blockquote{margin:0;color:#334c61;font:italic 400 15px/1.5 var(--font-display)}
+.reto-verse figcaption{margin-top:5px;color:#9a7432;font-size:10px;font-weight:900;letter-spacing:.1em;text-transform:uppercase}
+.reto-note-help{margin:6px 0 0;color:#8a97a2;font-size:12px}
+.reto-note-help.is-error{color:#a2442f;font-weight:800}
+.reto-saved{margin-top:16px}
+.reto-saved .reto-field-label{margin:0 0 6px}
+.reto-saved-text{margin:0;padding:12px 14px;border-radius:10px;background:#f6f8f9;color:var(--ink);font-size:14px;line-height:1.6;white-space:pre-wrap;overflow-wrap:anywhere}
+.reto-confirm{max-width:460px}
+.reto-confirm h2{margin:0 0 12px;color:var(--navy);font:600 22px var(--font-display)}
+.reto-confirm-text{max-height:40vh;margin:0;padding:12px 14px;overflow:auto;border-left:3px solid var(--gold);border-radius:0 10px 10px 0;background:#fdf8ec;color:#334c61;font-size:14px;line-height:1.6;white-space:pre-wrap;overflow-wrap:anywhere}
+.reto-confirm-note{display:flex;gap:7px;align-items:center;margin:12px 0 18px;color:#9a7432;font-size:13px;font-weight:800}
+.reto-question{margin:0;color:var(--navy);font:600 clamp(21px,2.6vw,28px)/1.25 var(--font-display)}
+.reto-note{display:block;width:100%;min-height:96px;padding:12px 14px;border:1px solid #d9d4c6;border-radius:10px;background:#fdfbf6;color:var(--ink);font:inherit;font-size:14px;line-height:1.6;resize:vertical;margin-top:14px}
+.reto-note.is-invalid{border-color:#c98a78;background:#fff8f5}
+.reto-note:focus-visible{outline:3px solid #4d86b2;outline-offset:1px}
+.reto-day-msg{display:flex;align-items:center;gap:7px;margin:16px 0 0;padding:11px 13px;border-radius:10px;background:#eef3f7;color:#3c5970;font-size:13px;font-weight:700}
+.reto-day-msg svg{flex:none}
+.reto-day-msg a{color:#2f78ad}
+.reto-day-msg.is-neutral{background:#f5f3ee;color:#6e7f8f;font-weight:600}
+.reto-day-msg.is-done{background:#eef5f0;color:#2f6b4f}
+.reto-day-action{display:flex;flex-wrap:wrap;align-items:center;gap:10px 12px;margin-top:16px}
+.reto-day-action .reto-day-msg{flex:1 1 260px;margin:0}
+.reto-edit-btn{display:inline-flex;align-items:center;gap:7px}
+
+.reto-phrase{padding:24px 26px;border-radius:18px;background:var(--navy);color:#fff}
+.reto-phrase .reto-kicker{color:#e8cf95}
+.reto-phrase-ref{margin:10px 0 0;color:#e8cf95;font-size:11px;font-weight:900;letter-spacing:.12em;text-transform:uppercase}
+.reto-phrase blockquote{margin:0;font:500 clamp(22px,2.6vw,29px)/1.3 var(--font-display)}
+
+/* Lateral */
+.reto-aside{display:grid;gap:14px}
+.reto-side-card{padding:18px;border:1px solid #e2ded3;border-radius:16px;background:#fffdf9}
+.reto-side-card p{margin:0;color:#526a7e;font-size:13px;line-height:1.55}
+.reto-side-muted{color:#6e7f8f;font-size:12px;line-height:1.55}
+.reto-side-muted a{color:#2f78ad;font-weight:800}
+.reto-delete{margin-top:14px;padding-top:12px;border-top:1px solid #ece7db}
+.reto-side-card .reto-delete p{margin:0 0 8px;font-size:12px}
+.reto-delete div{display:flex;gap:14px}
+.reto-link-btn{padding:0;border:0;background:none;color:#6e7f8f;font-size:12px;font-weight:700;text-decoration:underline}
+.reto-link-btn.is-danger{color:#a2442f}
+.reto-depth{padding:16px 16px 18px}
+.reto-depth-actions{display:flex;gap:8px;margin-top:14px}
+.reto-depth-actions button{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:40px;padding:8px 10px;font-size:13px}
+.reto-depth-actions button:disabled{background:#eceff1;border-color:#e1e5e8;color:#a3adb5;opacity:1;cursor:not-allowed}
+.reto-side-card .reto-depth-later{margin-top:8px;color:#8a97a2;font-size:12px;line-height:1.45}
+.reto-card-offscreen{position:fixed;top:0;left:-10000px;width:720px;height:1280px;pointer-events:none}
+.reto-depth-body{display:grid;grid-template-columns:84px 1fr;gap:14px;align-items:center;margin-top:4px}
+.depth-gauge{display:block;width:100%;height:auto}
+.depth-gauge-water{animation:depth-wave 4.5s linear infinite}
+@keyframes depth-wave{to{transform:translateX(40px)}}
+.reto-side-card .reto-depth-level{color:var(--navy);font:600 19px/1.2 var(--font-display)}
+.reto-side-card .reto-depth-count{margin-top:4px;color:#2f78ad;font-size:12px}
+.reto-depth-count strong{font-weight:900}
+.reto-depth-count span{color:#6e7f8f}
+.reto-side-card .reto-depth-hint{margin-top:6px;color:#6e7f8f;font-size:12px;line-height:1.45}
+
+/* Grupo */
+
+/* Secciones estáticas */
+.reto-how{margin-top:34px;padding:26px;border:1px solid #e2ded3;border-radius:18px;background:#fff}
+.reto-how h2,.reto-share h2{margin:0;color:var(--navy);font:600 clamp(24px,2.8vw,30px)/1.2 var(--font-display)}
+.reto-how-steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:16px 0 12px;padding:0;list-style:none}
+.reto-how-steps li{padding:16px;border-radius:13px;background:#e8f0f7}
+.reto-how-steps span{color:#2f78ad;font:400 30px/1 var(--font-script)}
+.reto-how-steps p{margin:8px 0 0;color:var(--navy);font-size:13px;font-weight:700;line-height:1.5}
+.reto-how-note{margin:0;color:#6e7f8f;font-size:12px}
+.reto-share{margin-top:20px;padding:26px;border:1px solid #d6e2da;border-radius:18px;background:#eef3ef}
+.reto-share ol{display:grid;gap:9px;margin:16px 0 0;padding:0;list-style:none}
+.reto-share li{display:flex;align-items:center;gap:12px;padding:12px 16px;border-radius:11px;background:#fff;color:var(--navy);font-size:14px;font-weight:700}
+.reto-share li span{color:#4f7668;font:400 22px/1 var(--font-script)}
+
+/* Herramientas de desarrollo (solo con `pnpm dev`) */
+.reto-card{position:absolute;top:0;left:0;width:720px;height:1280px;transform-origin:top left;display:flex;flex-direction:column;align-items:center;padding:70px 64px 60px;text-align:center;background:radial-gradient(ellipse at 8% 6%,#cbdde9aa 0,transparent 32%),radial-gradient(ellipse at 96% 40%,#e7d8b877 0,transparent 30%),#faf9f5;color:var(--navy)}
+.reto-card-brand{display:flex;align-items:center;gap:12px}
+.reto-card-brand span{font:900 40px/1 var(--font-ui);letter-spacing:-.06em;color:#397bb4}
+.reto-card .reto-card-eyebrow{margin:46px 0 0;color:#496f8b;font-size:22px;font-weight:800;letter-spacing:.1em;text-transform:uppercase}
+.reto-card .reto-card-stars{margin:14px 0 0;color:var(--gold);font-size:24px;letter-spacing:12px;opacity:.75}
+.reto-card .reto-card-name{margin:16px 0 0;color:#2f78ad;font:400 64px/1.05 var(--font-script)}
+.reto-card .reto-card-title{margin:10px 0 0;font:600 56px/1.12 var(--font-display);letter-spacing:-.02em;text-wrap:balance}
+.reto-card .reto-card-gauge{width:330px;margin:34px 0 0;filter:drop-shadow(0 14px 28px #173b5c22)}
+.reto-card .reto-card-count{margin:30px 0 0;color:#526a7e;font-size:28px}
+.reto-card .reto-card-count strong{color:#2f78ad;font-weight:900}
+.reto-card .reto-card-phrase{margin:22px 0 0;max-width:540px;color:#334c61;font:400 italic 27px/1.4 var(--font-display)}
+.reto-card .reto-card-foot{margin:auto 0 0;color:#7a8b99;font-size:20px;font-weight:800;letter-spacing:.12em}
+
+.reto-dev,.reto-dev-toggle{position:fixed;left:12px;bottom:12px;z-index:50;font-size:12px}
+.reto-dev{display:grid;gap:5px;padding:10px 12px;border-radius:12px;background:#1d2731ee;color:#fff;box-shadow:0 6px 20px #0004}
+.reto-dev div{display:flex;gap:5px}
+.reto-dev button,.reto-dev-toggle{display:inline-grid;place-items:center;min-width:28px;height:28px;padding:0 8px;border:0;border-radius:7px;background:#ffffff22;color:#fff;font-weight:800}
+.reto-dev-toggle{background:#1d2731ee}
+
+@media(max-width:899px){
+  .reto-layout{grid-template-columns:1fr}
+  .reto-aside{grid-template-columns:repeat(auto-fit,minmax(230px,1fr))}
+}
+@media(max-width:699px){
+  .reto-commitment{padding:18px 14px;border-radius:15px}
+  .reto-day-panel{padding:16px 14px}
+  .reto-phrase,.reto-how,.reto-share{padding:18px 16px}
+  .reto-how-steps{grid-template-columns:1fr}
+  .reto-aside{grid-template-columns:1fr}
 }
