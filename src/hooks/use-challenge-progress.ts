@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { defaultAvatar, parseAvatar, type Avatar } from "@/data/avatar";
 import { readPassportName } from "@/hooks/use-passport-storage";
 import { bogotaToday, daysBetween } from "@/lib/challenge/dates";
 
@@ -16,11 +17,13 @@ type Saved = {
   entries: Record<number, Entry>;
   // Día del reto → lo que va escribiendo antes de guardar.
   drafts: Record<number, string>;
+  // Ropa del monigote. Si no existe en lo guardado (versiones anteriores), se usa la básica.
+  avatar: Avatar;
 };
 
 export type ChallengeStatus = "not_started" | "in_progress" | "finished";
 
-const empty: Saved = { name: null, entries: {}, drafts: {} };
+const empty: Saved = { name: null, entries: {}, drafts: {}, avatar: defaultAvatar };
 
 const isObject = (v: unknown): v is Record<string, unknown> => !!v && typeof v === "object" && !Array.isArray(v);
 
@@ -42,7 +45,12 @@ function parse(raw: string | null): Saved {
     if (isObject(parsed.drafts)) {
       for (const [day, t] of Object.entries(parsed.drafts)) if (typeof t === "string") drafts[Number(day)] = t;
     }
-    return { name: typeof parsed.name === "string" ? parsed.name : null, entries, drafts };
+    return {
+      name: typeof parsed.name === "string" ? parsed.name : null,
+      entries,
+      drafts,
+      avatar: parseAvatar(parsed.avatar),
+    };
   } catch {
     return empty;
   }
@@ -176,7 +184,14 @@ export function useChallengeProgress({ slug, startsOn, totalDays }: { slug: stri
 
   const setName = useCallback((name: string) => setData((d) => ({ ...d, name })), []);
 
-  const reset = useCallback(() => setData({ ...empty, name: data.name }), [data.name]);
+  // Recibe solo las partes que cambiaron y las mezcla sobre lo último guardado.
+  const updateAvatar = useCallback(
+    (patch: Partial<Avatar>) => setData((d) => ({ ...d, avatar: { ...d.avatar, ...patch } })),
+    [],
+  );
+
+  // Borra los días y textos; el nombre y la ropa del monigote se conservan.
+  const reset = useCallback(() => setData((d) => ({ ...empty, name: d.name, avatar: d.avatar })), []);
 
   return {
     ready,
@@ -186,6 +201,8 @@ export function useChallengeProgress({ slug, startsOn, totalDays }: { slug: stri
     dayNumber,
     name: data.name ?? passportName,
     setName,
+    avatar: data.avatar,
+    updateAvatar,
     entries: data.entries,
     drafts: data.drafts,
     setDraft,

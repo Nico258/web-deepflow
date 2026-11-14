@@ -2,7 +2,7 @@
 
 El reto «Hablo con Dios todos los días» sale **sin API ni base de datos**, igual que el Pasaporte del Cielo: todo se guarda en el navegador de cada persona. Esta spec describe cómo funciona esa versión y qué pasa en cada escenario. Las specs [02](02-reto-7-dias.md), [03](03-api.md) y [04](04-base-de-datos.md) siguen siendo la referencia para cuando exista el backend (muro, río del grupo, rachas, nickname).
 
-Código: página en `src/app/hablo-con-dios/`, lógica en `src/hooks/use-challenge-progress.ts`, contenido en `src/data/challenges/oracion-7-dias.ts`.
+Código: página en `src/app/hablo-con-dios/`, lógica en `src/hooks/use-challenge-progress.ts`, contenido en `src/data/challenges/oracion-7-dias.ts`. Monigote: opciones en `src/data/avatar.ts`, dibujo en `src/components/avatar-figure.tsx` y editor en `src/components/avatar-editor.tsx`.
 
 ## 1. Qué cambia frente a la spec 02
 
@@ -15,7 +15,8 @@ Código: página en `src/app/hablo-con-dios/`, lógica en `src/hooks/use-challen
 | Aviso de privacidad que se acepta | Nota informativa al final de la página | No se envía nada, no hay nada que aceptar |
 | Escribir era opcional | **Escribir es obligatorio**, mínimo 15 caracteres (una frase corta) | El texto es la evidencia de que hubo conversación |
 | Marcar día sin confirmación | Confirmación que muestra el texto antes de guardar | El texto deja de poder editarse cuando termina el día |
-| Río personal en una lista de niveles | Ilustración de una persona en el río («Mi progreso») | Ocupa menos espacio y se entiende de un vistazo |
+| Río personal en una lista de niveles | Ilustración del monigote de la persona en el río («Mi progreso») | Ocupa menos espacio y se entiende de un vistazo |
+| — | Monigote personalizable: cabello, accesorio, tronco, piernas y zapatos | Que la imagen final se sienta propia |
 | — | Imagen para compartir (1080 × 1920) con la profundidad alcanzada | Cierre del reto, igual que la descarga del pasaporte |
 
 ## 2. Reglas
@@ -27,6 +28,13 @@ Código: página en `src/app/hablo-con-dios/`, lógica en `src/hooks/use-challen
 - **Guardar.** Hay que escribir al menos 15 caracteres; si no, el campo se marca y aparece el aviso. Con el mínimo, una confirmación muestra el texto y avisa que, cuando termine el día, ya no se podrá editar.
 - **Editar.** Durante el mismo día se puede editar lo guardado, con la misma validación y confirmación. Desde el día siguiente queda solo para leer.
 - **Niveles** (spec 02 §5): 1 día = hasta los tobillos, 3 = rodillas, 5 = cintura, 7 = un río para nadar. El agua del dibujo sube con cada día, no solo al cambiar de nivel.
+- **Monigote.** Desde «Personalizar» en «Mi progreso» se elige solo la ropa, con unas 6 opciones por parte:
+  - **Cabello** (8 estilos, 5 colores), **accesorio** (7, uno a la vez), **tronco** (7 prendas, 6 colores), **piernas** (7 prendas, 6 colores; el jean siempre es azul) y **zapatos** (7).
+  - La última opción de cada parte es de playa o piscina: gorro de natación (con su propio color), gafas de natación, camisa hawaiana, pantaloneta de baño y chanclas.
+  - Por defecto: pelo corto, camiseta, jean y tenis. «Al azar» arma una combinación.
+  - La **pose y la cara no se eligen**: cambian con el nivel. En la orilla está quieto, en los tobillos con las manos en la cintura, en las rodillas saluda, en la cintura abre los brazos y nadando celebra con los ojos cerrados.
+  - Sin tonos de piel ni expresiones elegibles: la cara es blanca, como un monigote.
+  - El agua es translúcida para que la ropa se siga viendo aunque quede sumergida.
 - **Imagen.** Se habilita al completar el día 7 o, si no se completó, desde el sábado 21 cuando el reto se cierra. Hace falta al menos un día completado. Antes de eso, «Compartir» y «Descargar» se ven en gris.
 
 ## 3. Qué se guarda y dónde
@@ -36,6 +44,7 @@ Código: página en `src/app/hablo-con-dios/`, lógica en `src/hooks/use-challen
 | Días completados (fecha y texto) | `localStorage` | `deepflow:reto:oracion-7-dias:v3` → `entries` |
 | Borradores sin guardar | `localStorage` | misma clave → `drafts` |
 | Nombre escrito en el reto | `localStorage` | misma clave → `name` (`null` si nunca se escribió aquí) |
+| Ropa del monigote | `localStorage` | misma clave → `avatar` (si falta o tiene valores desconocidos, se usa la básica) |
 | Nombre de la cédula (solo lectura) | IndexedDB del pasaporte | `conexion-pasaporte` / `pasaporte-del-cielo-v1` |
 
 No se usan cookies ni se hacen peticiones con datos. La imagen se genera en el navegador y solo sale si la persona la comparte o la descarga.
@@ -67,10 +76,12 @@ No se usan cookies ni se hacen peticiones con datos. La imagen se genera en el n
 | 21 | No escribe nombre | La imagen sale sin nombre |
 | 22 | Nombre muy largo | En la imagen el tamaño de letra se reduce para que quepa |
 | 23 | Comparte desde un celular | Se abre el menú de compartir del celular. Si el navegador no puede compartir archivos, la imagen se descarga |
-| 24 | Pulsa «Borrar mi progreso» | Se borran días, textos y borradores de ese navegador; el nombre se conserva |
+| 24 | Pulsa «Borrar mi progreso» | Se borran días, textos y borradores de ese navegador; el nombre y la ropa del monigote se conservan |
 | 25 | Datos guardados dañados o editados a mano | Se ignoran las partes que no tienen la forma esperada; el resto sigue funcionando |
 | 26 | Sin internet | La página necesita conexión para abrirse; una vez abierta, guardar funciona sin internet |
 | 27 | Cambia la fecha del celular | Ver §5 |
+| 28 | Nunca personaliza el monigote | Aparece con la ropa básica en la página y en la imagen |
+| 29 | Ya había empezado antes de que existiera el monigote | Su progreso sigue igual; el monigote aparece con la ropa básica hasta que lo cambie |
 
 ## 5. Cambiar la fecha del celular
 
