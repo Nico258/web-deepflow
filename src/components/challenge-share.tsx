@@ -6,6 +6,7 @@ import Image from "next/image";
 import { toCanvas } from "html-to-image";
 import { DepthGauge } from "@/components/depth-gauge";
 import { challenge, riverLevelFor } from "@/data/challenges/oracion-7-dias";
+import type { Avatar } from "@/data/avatar";
 
 // La imagen se dibuja en un lienzo fijo de 720 × 1280 (formato de estado/historia)
 // y se exporta al doble de densidad: 1080 × 1920.
@@ -18,7 +19,17 @@ export function shareHeadline(completed: number) {
   return level.level === 4 ? "Llegué a un río para nadar" : `Llegué ${level.title.toLowerCase()}`;
 }
 
-export function ShareCard({ name, completed, ref }: { name: string; completed: number; ref?: Ref<HTMLDivElement> }) {
+export function ShareCard({
+  name,
+  avatar,
+  completed,
+  ref,
+}: {
+  name: string;
+  avatar: Avatar;
+  completed: number;
+  ref?: Ref<HTMLDivElement>;
+}) {
   return (
     <div className="reto-card" ref={ref}>
       <div className="reto-card-brand">
@@ -35,7 +46,7 @@ export function ShareCard({ name, completed, ref }: { name: string; completed: n
         </p>
       ) : null}
       <p className="reto-card-title">{shareHeadline(completed)}</p>
-      <DepthGauge completed={completed} className="reto-card-gauge" />
+      <DepthGauge completed={completed} avatar={avatar} className="reto-card-gauge" />
       <p className="reto-card-count">
         <strong>
           {completed} de {challenge.totalDays}

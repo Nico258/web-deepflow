@@ -1,10 +1,12 @@
 "use client";
 
 import { useEffect, useId, useState } from "react";
-import { CaretLeft, CaretRight, Check, DownloadSimple, LockSimple, PencilSimple, ShareNetwork } from "@phosphor-icons/react";
+import { CaretLeft, CaretRight, Check, DownloadSimple, LockSimple, PencilSimple, ShareNetwork, TShirt } from "@phosphor-icons/react";
+import { AvatarEditor } from "@/components/avatar-editor";
 import { ShareCard, useShareImage } from "@/components/challenge-share";
 import { DepthGauge } from "@/components/depth-gauge";
 import { challenge, days, nextRiverLevel, riverLevelFor } from "@/data/challenges/oracion-7-dias";
+import type { Avatar } from "@/data/avatar";
 import { useChallengeProgress, type ChallengeStatus, type Entry } from "@/hooks/use-challenge-progress";
 import { addDays, bogotaToday, DEV_TODAY_KEY, formatLong } from "@/lib/challenge/dates";
 
@@ -115,6 +117,8 @@ export default function ChallengeApp() {
           <ProgressCard
             ready={c.ready}
             name={c.name}
+            avatar={c.avatar}
+            onAvatar={c.updateAvatar}
             completed={c.completedCount}
             canShare={canShare}
             status={c.status}
@@ -343,6 +347,8 @@ function ConfirmSave({ day, text, onCancel, onConfirm }: { day: number; text: st
 function ProgressCard({
   ready,
   name,
+  avatar,
+  onAvatar,
   completed,
   canShare,
   status,
@@ -351,6 +357,8 @@ function ProgressCard({
 }: {
   ready: boolean;
   name: string;
+  avatar: Avatar;
+  onAvatar: (patch: Partial<Avatar>) => void;
   completed: number;
   canShare: boolean;
   status: ChallengeStatus | null;
@@ -358,6 +366,7 @@ function ProgressCard({
   onReset: () => void;
 }) {
   const [confirming, setConfirming] = useState(false);
+  const [customizing, setCustomizing] = useState(false);
   const { card: shareCard, exporting, error: shareError, exportImage } = useShareImage();
   const level = riverLevelFor(completed);
   const next = nextRiverLevel(completed);
@@ -378,7 +387,7 @@ function ProgressCard({
         Mi progreso
       </p>
       <div className="reto-depth-body">
-        <DepthGauge completed={ready ? completed : 0} className="reto-depth-gauge" />
+        <DepthGauge completed={ready ? completed : 0} avatar={avatar} />
         <div className="reto-depth-info">
           <p className="reto-depth-level">{level ? level.title : "En la orilla"}</p>
           <p className="reto-depth-count">
@@ -388,6 +397,9 @@ function ProgressCard({
             días
           </p>
           <p className="reto-depth-hint">{hint}</p>
+          <button className="reto-avatar-btn" onClick={() => setCustomizing(true)} disabled={!ready}>
+            <TShirt aria-hidden="true" weight="bold" /> Personalizar
+          </button>
         </div>
       </div>
 
@@ -414,8 +426,17 @@ function ProgressCard({
       )}
       {canShare && (
         <div className="reto-card-offscreen" aria-hidden="true">
-          <ShareCard ref={shareCard} name={name} completed={completed} />
+          <ShareCard ref={shareCard} name={name} avatar={avatar} completed={completed} />
         </div>
+      )}
+
+      {customizing && (
+        <AvatarEditor
+          avatar={avatar}
+          level={riverLevelFor(completed)?.level ?? 0}
+          onChange={onAvatar}
+          onClose={() => setCustomizing(false)}
+        />
       )}
 
       {completed > 0 && (
