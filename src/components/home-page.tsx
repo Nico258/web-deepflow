@@ -1,12 +1,11 @@
 import Link from "next/link";
 import { ArrowRight, ArrowSquareOut, Clock, MapPin } from "@phosphor-icons/react/dist/ssr";
 import { ActivityCarousel } from "@/components/activity-carousel";
-import { ChallengeDayDots } from "@/components/challenge-day-dots";
+import { ChallengeDateLabel, ChallengeDayDots } from "@/components/challenge-day-dots";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 import { challenge } from "@/data/challenges/oracion-7-dias";
 import { meeting, motto } from "@/data/site";
-import { formatLong } from "@/lib/challenge/dates";
 
 export default function HomePage() {
   return (
@@ -56,7 +55,7 @@ export default function HomePage() {
                 junto.
               </span>
               <ChallengeDayDots startsOn={challenge.startsOn} totalDays={challenge.totalDays} />
-              <span className="home-activity-meta">Desde el {formatLong(challenge.startsOn)}</span>
+              <ChallengeDateLabel startsOn={challenge.startsOn} totalDays={challenge.totalDays} />
               <span className="home-activity-link">
                 Ir al reto <ArrowRight aria-hidden="true" size={17} />
               </span>

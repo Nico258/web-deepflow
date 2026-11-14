@@ -1,7 +1,7 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
-import { bogotaToday, daysBetween } from "@/lib/challenge/dates";
+import { addDays, bogotaToday, daysBetween, formatLong } from "@/lib/challenge/dates";
 
 // Círculos de los días del reto, rellenos según el día del calendario (hora de
 // Bogotá), iguales para todos: el primer día del reto hay 1 lleno, el segundo 2…
@@ -19,6 +19,19 @@ export function ChallengeDayDots({ startsOn, totalDays }: { startsOn: string; to
           {i + 1}
         </span>
       ))}
+    </span>
+  );
+}
+
+// Texto bajo los círculos: «Desde el…» mientras el reto no ha terminado y «Hasta el…»
+// desde el día siguiente al último.
+export function ChallengeDateLabel({ startsOn, totalDays }: { startsOn: string; totalDays: number }) {
+  const today = useSyncExternalStore(noop, bogotaToday, () => null);
+  const finished = today ? daysBetween(startsOn, today) + 1 > totalDays : false;
+
+  return (
+    <span className="home-activity-meta">
+      {finished ? `Hasta el ${formatLong(addDays(startsOn, totalDays - 1))}` : `Desde el ${formatLong(startsOn)}`}
     </span>
   );
 }
