@@ -15,6 +15,21 @@ function dbOpen() {
   });
 }
 
+// Nombre escrito en el Pasaporte del Cielo, para no pedirlo otra vez en otras actividades.
+export async function readPassportName(): Promise<string> {
+  try {
+    const db = await dbOpen();
+    const saved = await new Promise<{ name?: unknown } | undefined>((resolve, reject) => {
+      const req = db.transaction(STORE).objectStore(STORE).get(KEY);
+      req.onsuccess = () => { db.close(); resolve(req.result); };
+      req.onerror = () => { db.close(); reject(req.error); };
+    });
+    return typeof saved?.name === "string" ? saved.name.trim() : "";
+  } catch {
+    return "";
+  }
+}
+
 export function usePassportStorage<T>(value: T, ready: boolean, onLoad: (value: T | null) => void, onError: () => void) {
   useEffect(() => {
     let active = true;

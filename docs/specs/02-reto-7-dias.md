@@ -2,6 +2,8 @@
 
 Fuente de verdad visual y de textos: páginas 3 y 4 del PDF de diseño (ver nota sobre su lectura en el README). Identidad, token y privacidad: [00-arquitectura.md §3](00-arquitectura.md). Endpoints: [03-api.md](03-api.md). Tablas: [04-base-de-datos.md](04-base-de-datos.md).
 
+> **Primer lanzamiento:** el reto sale en una versión local, sin API ni base de datos (sin muro, río del grupo ni nickname). Ver [06-reto-version-local.md](06-reto-version-local.md). Esta spec describe la versión con backend.
+
 > **Esta spec es solo del reto de 7 días.** Las **peticiones de oración son una funcionalidad completamente distinta** ([05-peticiones-de-oracion.md](05-peticiones-de-oracion.md)): otra página, otras tablas, otros endpoints y otro lanzamiento. Lo único que comparten es la identidad (nickname y token). Nada de esta spec depende de las peticiones: el reto sale y funciona sin ellas. Que el día 6 del reto se llame «Orar por otros» no las conecta.
 
 ## 1. Qué es
@@ -138,7 +140,7 @@ Todos ven cómo van los demás. Reglas **decididas**:
 
 ## 8. Flujo de la persona
 
-1. Abre `/reto-7-dias` (contenido visible sin registrarse: es estático) y ve qué día del reto es hoy.
+1. Abre `/hablo-con-dios` (contenido visible sin registrarse: es estático) y ve qué día del reto es hoy.
 2. **Firma el compromiso escribiendo su nickname** (sin código de invitación, sin nombre ni contraseña). Si el nickname no existe, se crea la cuenta: la API devuelve el token y se guarda en el dispositivo. Si ya existe y no es suyo (otro token), se rechaza con «Ese nickname no está disponible» y debe elegir otro ([00 §3](00-arquitectura.md)). Si el dispositivo ya tiene su token, no necesita volver a registrarse.
 3. Cada día: lee la pregunta, escribe si quiere, marca el día. **Al marcar su primer día acepta el aviso de privacidad y queda inscrita** en el reto. El río sube.
 4. Ve el muro y el río del grupo.

@@ -25,6 +25,7 @@ Cada spec termina con «Fuera de alcance por ahora».
 | [03-api.md](03-api.md) | API en Go: endpoints de identidad y del reto, token, reglas de dominio, errores, estructura del proyecto |
 | [04-base-de-datos.md](04-base-de-datos.md) | Postgres: tablas de identidad y del reto, diagrama entidad-relación, restricciones, migraciones, operación |
 | [05-peticiones-de-oracion.md](05-peticiones-de-oracion.md) | **Funcionalidad aparte**, posterior al primer lanzamiento. Contiene todo lo suyo: reglas, endpoints y tablas |
+| [06-reto-version-local.md](06-reto-version-local.md) | **Primer lanzamiento del reto, sin API**: todo en el dispositivo, reglas y qué pasa en cada escenario |
 
 Orden sugerido: 00 → 01 → 02 → 03 → 04. La 05 se lee solo cuando se vaya a abordar esa funcionalidad.
 
@@ -37,7 +38,7 @@ El **reto de 7 días** y las **peticiones de oración** son funcionalidades **co
 | Spec | [02](02-reto-7-dias.md) (y sus endpoints y tablas en [03](03-api.md) y [04](04-base-de-datos.md)) | [05](05-peticiones-de-oracion.md), y solo esa |
 | Lanzamiento | **Primer lanzamiento** (sábado 14 de noviembre de 2026) | Posterior, sin fecha |
 | Qué guarda el servidor | Solo que el día se completó y si la persona escribió | Texto libre (el cuerpo de la petición) |
-| Página | `/reto-7-dias` | Propia (propuesta `/peticiones`) |
+| Página | `/hablo-con-dios` | Propia (propuesta `/peticiones`) |
 
 Lo único que comparten es la **identidad** (nickname y token, tabla `users`). No comparten páginas, tablas, endpoints ni lanzamiento, y ninguna depende de la otra. Que el día 6 del reto se llame «Orar por otros» no las conecta.
 
@@ -62,7 +63,7 @@ Lo único que comparten es la **identidad** (nickname y token, tabla `users`). N
 - A quien hace la **página del reto**: qué mostrar con 0 días (idea: un personaje fuera del agua, esperando), cómo se ve qué día es hoy y el contador de quien llega tarde.
 - A quien tiene el **despliegue**: Cloud Run o Render.
 
-**Rutas (ya implementadas en la página principal):** `/` página principal, `/quienes-somos`, `/cedula-del-cielo` (pasaporte) y, cuando esté listo, `/reto-7-dias`. El slug del reto en la API y la base es `oracion-7-dias` ([01 §4](01-pagina-principal.md)).
+**Rutas (ya implementadas en la página principal):** `/` página principal, `/quienes-somos`, `/cedula-del-cielo` (pasaporte) y `/hablo-con-dios` (reto de 7 días, versión local: ver [06](06-reto-version-local.md)). El slug del reto en la API y la base es `oracion-7-dias` ([01 §4](01-pagina-principal.md)).
 
 ## Dónde está la documentación
 

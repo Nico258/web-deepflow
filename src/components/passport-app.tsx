@@ -312,7 +312,7 @@ export default function PassportApp() {
 
       <main className="main-wrap">
         <div className="intro">
-          <p className="eyebrow">Tengo un propósito y nadie me separa de Dios</p>
+          <p className="eyebrow">Una identidad que no se pierde, se vive</p>
           <h1 className="hero-title">Abre tus <em>sobres</em>, descubre tus <em>sellos</em> y construye tu <em>pasaporte</em>.</h1>
         </div>
 
