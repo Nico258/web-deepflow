@@ -24,6 +24,7 @@ Cada spec termina con «Fuera de alcance por ahora».
 | [03-api.md](03-api.md) | API en Go: endpoints, token, reglas de dominio, errores, estructura del proyecto |
 | [04-base-de-datos.md](04-base-de-datos.md) | Postgres: tablas, diagrama entidad-relación, restricciones, migraciones, operación |
 | [05-peticiones-de-oracion.md](05-peticiones-de-oracion.md) | **Funcionalidad aparte** del reto, posterior al primer lanzamiento |
+| [06-reto-version-local.md](06-reto-version-local.md) | **Primer lanzamiento del reto, sin API**: todo en el dispositivo, reglas y qué pasa en cada escenario |
 
 Orden sugerido: 00 → 01 → 02 → 03 → 04. La 05 se lee cuando se vaya a abordar esa funcionalidad.
 
