@@ -1,0 +1,43 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      # Postgres para los tests de integración de internal/store.
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: deepflow
+          POSTGRES_PASSWORD: deepflow
+          POSTGRES_DB: deepflow
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U deepflow"
+          --health-interval 2s
+          --health-timeout 3s
+          --health-retries 20
+    env:
+      TEST_DATABASE_URL: postgres://deepflow:deepflow@localhost:5432/deepflow?sslmode=disable
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+      - name: gofmt
+        run: test -z "$(gofmt -l .)" || (gofmt -l . && exit 1)
+      - run: go vet ./...
+      - run: go test -race ./...
+      - name: Las migraciones suben y bajan
+        env:
+          DATABASE_URL: ${{ env.TEST_DATABASE_URL }}
+        run: |
+          go run ./cmd/migrate up
+          go run ./cmd/migrate down
+          go run ./cmd/migrate up
