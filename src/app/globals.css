@@ -455,7 +455,9 @@ a.brand{text-decoration:none}
 /* Herramientas de desarrollo (solo con `pnpm dev`) */
 .reto-card{position:absolute;top:0;left:0;width:720px;height:1280px;transform-origin:top left;display:flex;flex-direction:column;align-items:center;padding:70px 64px 60px;text-align:center;background:radial-gradient(ellipse at 8% 6%,#cbdde9aa 0,transparent 32%),radial-gradient(ellipse at 96% 40%,#e7d8b877 0,transparent 30%),#faf9f5;color:var(--navy)}
 .reto-card-brand{display:flex;align-items:center;gap:12px}
-.reto-card-brand span{font:900 40px/1 var(--font-ui);letter-spacing:-.06em;color:#397bb4}
+.reto-card-logo{display:block;width:66px;aspect-ratio:636/532}
+.reto-card-logo img{display:block;width:100%;height:100%}
+.reto-card-brand > span:last-child{font:900 40px/1 var(--font-ui);letter-spacing:-.06em;color:#397bb4}
 .reto-card .reto-card-eyebrow{margin:46px 0 0;color:#496f8b;font-size:22px;font-weight:800;letter-spacing:.1em;text-transform:uppercase}
 .reto-card .reto-card-stars{margin:14px 0 0;color:var(--gold);font-size:24px;letter-spacing:12px;opacity:.75}
 .reto-card .reto-card-name{margin:16px 0 0;color:#2f78ad;font:400 64px/1.05 var(--font-script)}
@@ -463,7 +465,7 @@ a.brand{text-decoration:none}
 .reto-card .reto-card-gauge{width:330px;margin:34px 0 0;filter:drop-shadow(0 14px 28px #173b5c22)}
 .reto-card .reto-card-count{margin:30px 0 0;color:#526a7e;font-size:28px}
 .reto-card .reto-card-count strong{color:#2f78ad;font-weight:900}
-.reto-card .reto-card-phrase{margin:22px 0 0;max-width:540px;color:#334c61;font:400 italic 27px/1.4 var(--font-display)}
+.reto-card .reto-card-phrase{margin:22px 0 0;max-width:560px;color:#334c61;font:400 italic 27px/1.4 var(--font-display)}
 .reto-card .reto-card-foot{margin:auto 0 0;color:#7a8b99;font-size:20px;font-weight:800;letter-spacing:.12em}
 
 .reto-dev,.reto-dev-toggle{position:fixed;left:12px;bottom:12px;z-index:50;font-size:12px}
