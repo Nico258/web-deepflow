@@ -13,6 +13,27 @@ import type { Avatar } from "@/data/avatar";
 const CARD_W = 720;
 const CARD_H = 1280;
 
+// El logo no entra en la captura de html-to-image: en iPhone/iPad (Safari y todos los navegadores, que usan WebKit)
+// salía en blanco porque WebKit da la captura por lista antes de terminar de cargar las <img> que lleva dentro.
+// Es el mismo problema que tuvo la foto del pasaporte, y se resuelve igual: se excluye de la captura y se pinta
+// después a mano con paintLogo, igual en todos los navegadores. Su recuadro (.reto-card-logo) sí se captura,
+// para que «DeepFlow» no se corra. Si se añade otra <img> a la tarjeta, tendrá el mismo problema en iPhone.
+const isLogo = (el: HTMLElement) => el instanceof HTMLImageElement && el.closest(".reto-card-logo") !== null;
+
+/** Pinta el logo sobre la captura, en la posición y el tamaño que tiene en la tarjeta. */
+async function paintLogo(canvas: HTMLCanvasElement, card: HTMLElement) {
+  const box = card.querySelector<HTMLElement>(".reto-card-logo");
+  const img = box?.querySelector("img");
+  const ctx = canvas.getContext("2d");
+  if (!box || !img || !ctx) return;
+  const logo = new window.Image();
+  logo.src = img.currentSrc || img.src;
+  await logo.decode();
+  // offsetLeft/Top son relativos a la tarjeta (su offsetParent) e ignoran la escala con que se muestre.
+  const ratio = canvas.width / CARD_W;
+  ctx.drawImage(logo, box.offsetLeft * ratio, box.offsetTop * ratio, box.offsetWidth * ratio, box.offsetHeight * ratio);
+}
+
 export function shareHeadline(completed: number) {
   const level = riverLevelFor(completed);
   if (!level) return "";
@@ -33,7 +54,9 @@ export function ShareCard({
   return (
     <div className="reto-card" ref={ref}>
       <div className="reto-card-brand">
-        <Image src="/deepflowlogo.png" alt="" width={66} height={56} loading="eager" />
+        <span className="reto-card-logo">
+          <Image src="/deepflowlogo.png" alt="" width={66} height={56} loading="eager" />
+        </span>
         <span>DeepFlow</span>
       </div>
       <p className="reto-card-eyebrow">{challenge.theme}</p>
@@ -75,9 +98,11 @@ export function useShareImage() {
     try {
       await document.fonts.ready;
       await Promise.all(Array.from(node.querySelectorAll("img")).map((img) => img.decode().catch(() => undefined)));
-      const options = { width: CARD_W, height: CARD_H, pixelRatio: 1.5, cacheBust: true };
+      const options = { width: CARD_W, height: CARD_H, pixelRatio: 1.5, cacheBust: true, filter: (el: HTMLElement) => !isLogo(el) };
       const capture = async () => {
+        // Se captura la tarjeta sin el logo (ver isLogo) y luego se pinta el logo encima.
         const canvas = await toCanvas(node, options);
+        await paintLogo(canvas, node);
         return new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/png"));
       };
       let blob = await capture();
