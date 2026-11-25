@@ -26,6 +26,7 @@ Cada spec termina con «Fuera de alcance por ahora».
 | [04-base-de-datos.md](04-base-de-datos.md) | Postgres: tablas de identidad y del reto, diagrama entidad-relación, restricciones, migraciones, operación |
 | [05-peticiones-de-oracion.md](05-peticiones-de-oracion.md) | **Funcionalidad aparte**, posterior al primer lanzamiento. Contiene todo lo suyo: reglas, endpoints y tablas |
 | [06-reto-version-local.md](06-reto-version-local.md) | **Primer lanzamiento del reto, sin API**: todo en el dispositivo, reglas y qué pasa en cada escenario |
+| [07-novena-interactiva.md](07-novena-interactiva.md) | **Novena interactiva «Camino a Belén»**: juego en pixel art por capítulos, motor, formato de un capítulo, arte y plan de trabajo |
 
 Orden sugerido: 00 → 01 → 02 → 03 → 04. La 05 se lee solo cuando se vaya a abordar esa funcionalidad.
 
