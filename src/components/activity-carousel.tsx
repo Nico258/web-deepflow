@@ -9,14 +9,18 @@ const startPadding = (track: HTMLElement) => parseFloat(getComputedStyle(track).
 // flechas. Las flechas y los puntos solo aparecen si las tarjetas no caben.
 export function ActivityCarousel({ children, label }: { children: ReactNode; label: string }) {
   const trackRef = useRef<HTMLDivElement>(null);
+  const prevRef = useRef<HTMLButtonElement>(null);
+  const nextRef = useRef<HTMLButtonElement>(null);
   const slides = Children.toArray(children);
   const [active, setActive] = useState(0);
   const [overflow, setOverflow] = useState(false);
   const [edges, setEdges] = useState({ start: true, end: false });
+  // Se anuncia la tarjeta visible solo después de que la persona desplaza el carrusel.
+  const [status, setStatus] = useState("");
 
   const measure = useCallback(() => {
     const track = trackRef.current;
-    if (!track) return;
+    if (!track) return null;
     const max = track.scrollWidth - track.clientWidth;
     setOverflow(max > 4);
     setEdges({ start: track.scrollLeft <= 4, end: track.scrollLeft >= max - 4 });
@@ -33,27 +37,44 @@ export function ActivityCarousel({ children, label }: { children: ReactNode; lab
         best = i;
       }
     });
-    setActive(track.scrollLeft >= max - 4 && max > 4 ? items.length - 1 : best);
+    const index = track.scrollLeft >= max - 4 && max > 4 ? items.length - 1 : best;
+    setActive(index);
+    return { index, total: items.length };
   }, []);
 
   useEffect(() => {
     const track = trackRef.current;
     if (!track) return;
     measure();
-    const observer = new ResizeObserver(measure);
+    const observer = new ResizeObserver(() => measure());
     observer.observe(track);
-    track.addEventListener("scroll", measure, { passive: true });
+    // Se mide cuando el desplazamiento termina (scrollend); donde no existe, en cada scroll.
+    const settled = () => {
+      const result = measure();
+      if (result) setStatus(`Actividad ${result.index + 1} de ${result.total}`);
+    };
+    const hasScrollEnd = "onscrollend" in window;
+    const event = hasScrollEnd ? "scrollend" : "scroll";
+    track.addEventListener(event, settled, { passive: true });
     return () => {
       observer.disconnect();
-      track.removeEventListener("scroll", measure);
+      track.removeEventListener(event, settled);
     };
   }, [measure]);
+
+  // Si la flecha con el foco se desactiva al llegar a un extremo, el foco pasa a la otra.
+  useEffect(() => {
+    const focused = document.activeElement;
+    if (edges.start && focused === prevRef.current) nextRef.current?.focus();
+    else if (edges.end && focused === nextRef.current) prevRef.current?.focus();
+  }, [edges]);
 
   const goTo = (index: number) => {
     const track = trackRef.current;
     const item = track?.children[index] as HTMLElement | undefined;
     if (!track || !item) return;
-    track.scrollTo({ left: item.offsetLeft - startPadding(track), behavior: "smooth" });
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    track.scrollTo({ left: item.offsetLeft - startPadding(track), behavior: reduceMotion ? "auto" : "smooth" });
   };
 
   return (
@@ -64,7 +85,7 @@ export function ActivityCarousel({ children, label }: { children: ReactNode; lab
             className="activity-carousel-slide"
             key={i}
             role="group"
-            aria-roledescription="tarjeta"
+            aria-roledescription="diapositiva"
             aria-label={`${i + 1} de ${slides.length}`}
           >
             {slide}
@@ -72,9 +93,14 @@ export function ActivityCarousel({ children, label }: { children: ReactNode; lab
         ))}
       </div>
 
+      <p className="visually-hidden" role="status">
+        {status}
+      </p>
+
       {overflow && (
         <div className="activity-carousel-controls">
           <button
+            ref={prevRef}
             type="button"
             className="activity-carousel-arrow"
             onClick={() => goTo(Math.max(active - 1, 0))}
@@ -96,6 +122,7 @@ export function ActivityCarousel({ children, label }: { children: ReactNode; lab
             ))}
           </div>
           <button
+            ref={nextRef}
             type="button"
             className="activity-carousel-arrow"
             onClick={() => goTo(Math.min(active + 1, slides.length - 1))}

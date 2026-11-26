@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { ViewTransition } from "react";
 import { Playfair_Display, Caveat_Brush, Nunito } from "next/font/google";
 import "./globals.css";
 
@@ -15,7 +16,10 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="es">
-      <body className={`${playfair.variable} ${caveat.variable} ${nunito.variable}`}>{children}</body>
+      <body className={`${playfair.variable} ${caveat.variable} ${nunito.variable}`}>
+        {/* Al navegar entre páginas, la vieja se funde con la nueva (View Transitions). */}
+        <ViewTransition name="page">{children}</ViewTransition>
+      </body>
     </html>
   );
 }
