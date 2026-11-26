@@ -29,6 +29,13 @@ export function NovenaApp() {
     setLoading(true);
     try {
       const chapter = await info.load();
+      // En desarrollo, el validador avisa en la consola de errores del guion (spec 07 §3).
+      if (process.env.NODE_ENV !== "production") {
+        const { validateChapter } = await import("@/game/novena/validate");
+        const { errors, warnings } = validateChapter(chapter);
+        errors.forEach((e) => console.error(`[novena] ${chapterLabel(info)}: ${e}`));
+        warnings.forEach((w) => console.warn(`[novena] ${chapterLabel(info)}: ${w}`));
+      }
       setSelected(info);
       setPlaying({ info, chapter, startAt });
     } finally {

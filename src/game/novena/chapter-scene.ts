@@ -1,6 +1,7 @@
 import * as Phaser from "phaser";
 import type { NovenaBus, ResolvedLine } from "./bus";
-import type { Action, Actor, Chapter, Lighting, Step, Tile, Zone } from "./types";
+import { DIRS, SOLID, inZone, manhattan, same, toGrid } from "./map";
+import type { Action, Actor, Chapter, Lighting, Step, Tile } from "./types";
 
 // Motor de un capítulo. Lee el guion (src/data/novena/capitulos/*) y lo vuelve jugable:
 // dibuja el mapa, mueve al jugador por casillas, recorre los pasos y le pide a React
@@ -14,7 +15,6 @@ const STEP_MS = 150;
 const SHEEP_STEP_MS = 220;
 const SHEEP_TICK_MS = 300;
 
-const SOLID = new Set(["#", "T", "b", "f", "~", "*"]);
 const GROUND: Record<string, number> = { ",": 0xb89c6a, g: 0xb89c6a, _: 0xa9a294, "#": 0x77736c, "~": 0x3f73a6 };
 const GRASS = 0x6f9a4f;
 
@@ -24,16 +24,6 @@ const LIGHT: Record<Lighting, { color: number; alpha: number }> = {
   glory: { color: 0xfff1c4, alpha: 0.22 },
 };
 
-const DIRS: Tile[] = [
-  [0, 1],
-  [0, -1],
-  [1, 0],
-  [-1, 0],
-];
-
-const same = (a: Tile, b: Tile) => a[0] === b[0] && a[1] === b[1];
-const manhattan = (a: Tile, b: Tile) => Math.abs(a[0] - b[0]) + Math.abs(a[1] - b[1]);
-const inZone = (t: Tile, z: Zone) => t[0] >= z.x && t[0] < z.x + z.w && t[1] >= z.y && t[1] < z.y + z.h;
 const center = (t: Tile) => ({ x: t[0] * TILE + TILE / 2, y: t[1] * TILE + TILE / 2 });
 
 type Figure = Phaser.GameObjects.Container;
@@ -41,6 +31,40 @@ type Person = { actor: Actor; tile: Tile; view: Figure; hidden: boolean; bob?: P
 type Sheep = { tile: Tile; view: Figure; penned: boolean; moving: boolean };
 
 export type SceneOptions = { chapter: Chapter; bus: NovenaBus; startAt?: string };
+
+/** Estado visible desde las pruebas y la consola (ver NovenaDebug). */
+export type DebugState = {
+  step: string | null;
+  goal: Step["goal"]["type"] | null;
+  /** Con quién hay que hablar, si la meta es `talk`. */
+  talkTo: string | null;
+  busy: boolean;
+  done: boolean;
+  player: Tile;
+  sheep: { penned: number; total: number };
+};
+
+/**
+ * Herramientas de depuración que quedan en `window.__novena` solo en desarrollo.
+ * Las usan las pruebas automáticas (tests/novena) para recorrer un capítulo sin jugarlo de verdad.
+ * Es la única parte del motor que las pruebas tocan: si cambia, hay que actualizarlas.
+ */
+export type NovenaDebug = {
+  scene: ChapterScene;
+  state(): DebugState;
+  /**
+   * Cumple la meta del paso actual como si se hubiera jugado: `talk` habla con el personaje,
+   * `reach` lleva al jugador a la zona y `herd` mete las ovejas al corral. Devuelve false si
+   * en ese momento no se puede (hay un diálogo o una escena, o la meta es `auto`).
+   */
+  completeStep(): boolean;
+  /** Pone al jugador en una casilla, sin animación. */
+  teleport(tile: Tile): void;
+  /** Posición en pantalla (píxeles CSS, relativa a la ventana) del centro de una casilla. */
+  screenPoint(tile: Tile): { x: number; y: number };
+  /** Casilla donde está un personaje. */
+  actorTile(id: string): Tile | null;
+};
 
 export class ChapterScene extends Phaser.Scene {
   private chapter: Chapter;
@@ -86,11 +110,9 @@ export class ChapterScene extends Phaser.Scene {
   // ───────── Montaje ─────────
 
   create() {
-    const rows = this.chapter.map.rows;
-    const width = Math.max(...rows.map((r) => r.length));
-    this.grid = rows.map((r) => r.padEnd(width, "#").split(""));
-    const mapW = width * TILE;
-    const mapH = rows.length * TILE;
+    this.grid = toGrid(this.chapter.map.rows);
+    const mapW = (this.grid[0]?.length ?? 0) * TILE;
+    const mapH = this.grid.length * TILE;
 
     this.ground = this.add.graphics().setDepth(0);
     this.drawMap();
@@ -138,8 +160,14 @@ export class ChapterScene extends Phaser.Scene {
 
     this.setupInput();
 
-    // Para depurar desde la consola del navegador en desarrollo: window.__novena
-    if (process.env.NODE_ENV !== "production") (window as unknown as { __novena?: ChapterScene }).__novena = this;
+    // Para depurar desde la consola del navegador y para las pruebas: window.__novena
+    if (process.env.NODE_ENV !== "production") {
+      const w = window as unknown as { __novena?: NovenaDebug };
+      w.__novena = this.debugApi();
+      this.events.once(Phaser.Scenes.Events.DESTROY, () => {
+        if (w.__novena?.scene === this) delete w.__novena;
+      });
+    }
 
     if (this.chapter.herd) this.time.addEvent({ delay: SHEEP_TICK_MS, loop: true, callback: this.sheepTick, callbackScope: this });
 
@@ -485,11 +513,85 @@ export class ChapterScene extends Phaser.Scene {
     const pen = this.chapter.herd?.pen;
     if (!pen) return;
     this.sheep.forEach((s, i) => {
+      this.tweens.killTweensOf(s.view);
+      s.moving = false;
       s.tile = [pen.x + 1 + ((i * 2) % Math.max(1, pen.w - 2)), pen.y + 1 + Math.floor((i * 2) / Math.max(1, pen.w - 2))];
       s.penned = true;
       this.place(s.view, s.tile);
     });
     this.closeGate();
+  }
+
+  // ───────── Depuración (solo en desarrollo) ─────────
+
+  private debugApi(): NovenaDebug {
+    return {
+      scene: this,
+      state: () => ({
+        step: this.step?.id ?? null,
+        goal: this.step?.goal.type ?? null,
+        talkTo: this.step?.goal.type === "talk" ? this.step.goal.actor : null,
+        busy: this.busy || this.moving,
+        done: this.done,
+        player: [...this.playerTile],
+        sheep: { penned: this.sheep.filter((s) => s.penned).length, total: this.sheep.length },
+      }),
+      completeStep: () => {
+        const goal = this.step?.goal;
+        if (!goal || this.busy || this.moving) return false;
+        if (goal.type === "talk") {
+          const person = this.people.get(goal.actor);
+          if (!person) return false;
+          void this.talkTo(person);
+          return true;
+        }
+        if (goal.type === "reach") {
+          const { x, y, w, h } = goal.zone;
+          for (let tx = x; tx < x + w; tx++)
+            for (let ty = y; ty < y + h; ty++) {
+              if (!this.walkable([tx, ty])) continue;
+              this.teleportPlayer([tx, ty]);
+              this.afterPlayerMove();
+              return true;
+            }
+          return false;
+        }
+        if (goal.type === "herd") {
+          const herd = this.chapter.herd;
+          if (!herd) return false;
+          // Si el jugador quedó dentro del corral, sale por la puerta antes de cerrarla.
+          if (inZone(this.playerTile, herd.pen) || herd.gate.some((g) => same(g, this.playerTile))) {
+            const out = herd.gate
+              .flatMap(([gx, gy]) => DIRS.map(([dx, dy]): Tile => [gx + dx, gy + dy]))
+              .find((t) => this.walkable(t) && !inZone(t, herd.pen) && !herd.gate.some((g) => same(g, t)));
+            if (!out) return false;
+            this.teleportPlayer(out);
+          }
+          this.penAllSheep();
+          void this.progress(() => this.finishStep());
+          return true;
+        }
+        return false;
+      },
+      teleport: (tile) => this.teleportPlayer(tile),
+      screenPoint: (tile) => {
+        const cam = this.cameras.main;
+        const rect = this.game.canvas.getBoundingClientRect();
+        const { x, y } = center(tile);
+        return { x: rect.left + (x - cam.worldView.x) * cam.zoom, y: rect.top + (y - cam.worldView.y) * cam.zoom };
+      },
+      actorTile: (id) => {
+        const p = this.people.get(id);
+        return p ? [...p.tile] : null;
+      },
+    };
+  }
+
+  private teleportPlayer(tile: Tile) {
+    this.path = [];
+    this.pendingTalk = null;
+    this.playerTile = [...tile];
+    this.place(this.player, tile);
   }
 
   // ───────── Mundo ─────────

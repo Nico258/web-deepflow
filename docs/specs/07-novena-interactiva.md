@@ -4,7 +4,7 @@ Un juego en pixel art, con vista desde arriba, que acompaña la Novena de Aguina
 
 «Camino a Belén» es un nombre provisional.
 
-Código: página en `src/app/novena/`, motor del juego en `src/game/novena/`, contenido en `src/data/novena/`, interfaz en `src/components/novena/` y guardado en `src/hooks/use-novena-progress.ts`.
+Código: página en `src/app/novena/`, motor del juego y validador en `src/game/novena/`, contenido en `src/data/novena/`, interfaz en `src/components/novena/`, guardado en `src/hooks/use-novena-progress.ts` y pruebas en `tests/novena/`.
 
 ## 1. La idea
 
@@ -93,9 +93,14 @@ Un capítulo tiene:
 
 Para un momento jugable nuevo (cargar el burro, tocar puertas…), primero hay que preguntarse si se arma con estas piezas. Si no, se agrega una meta nueva al motor, como se hizo con `herd`, para que quede disponible para los demás capítulos.
 
-### Probar un capítulo a medias
+### Probar un capítulo
 
-En desarrollo (`pnpm dev`), `/novena?cap=8&paso=volver` abre el capítulo 8 directamente en ese paso. Los pasos anteriores se dan por hechos sin diálogos (las ovejas aparecen en el corral, los personajes ya mostrados aparecen). En producción no funciona.
+- **Empezar a medias:** en desarrollo (`pnpm dev`), `/novena?cap=8&paso=volver` abre el capítulo 8 directamente en ese paso. Los pasos anteriores se dan por hechos sin diálogos (las ovejas aparecen en el corral, los personajes ya mostrados aparecen). En producción no funciona.
+- **Validador** (`src/game/novena/validate.ts`): revisa el guion sin jugarlo. Encuentra lo que rompe el capítulo o lo deja trabado: un diálogo o personaje que no existe, una letra desconocida en el mapa, alguien parado sobre un árbol, hablar con alguien que está oculto o que no tiene diálogo para ese paso, una zona a la que no se puede llegar… También avisa de descuidos, como un diálogo que nadie usa o un paso sin objetivo. En desarrollo corre solo al abrir un capítulo y escribe en la consola del navegador.
+- **Pruebas automáticas** (`pnpm test:novena`, en `tests/novena/`): para **cada capítulo que tenga `load`** en `chapters.ts`, corren el validador y recorren el capítulo de punta a punta en escritorio y en celular (390 × 780, táctil). No se juega de verdad: los diálogos se cierran al instante, a quien hay que hablarle se le toca de verdad y las demás metas se cumplen de una vez (llegar a la zona, meter las ovejas al corral). Pasan si aparece el cierre con el versículo, se guarda el capítulo y no hay errores en la consola. Tardan unos 15 segundos por capítulo. **Al agregar un capítulo no hay que escribir pruebas nuevas.**
+  - La primera vez hay que instalar un navegador para las pruebas: `pnpm exec playwright install chromium`. Si se prefiere usar uno ya instalado, sin descargar nada: `PW_CHANNEL=msedge pnpm test:novena` (Edge) o `PW_CHANNEL=chrome`.
+  - Si ya hay un `pnpm dev` abierto en el puerto 3000, las pruebas lo usan; si no, lo abren solas.
+- **Consola:** en desarrollo, `window.__novena` tiene herramientas de depuración: `state()` (paso actual, meta, posición), `completeStep()` (cumple la meta actual), `teleport([x, y])`, `actorTile(id)` y `scene` (la escena de Phaser). Las pruebas usan solo estas funciones; si el motor cambia, se ajustan ahí (`NovenaDebug` en `chapter-scene.ts`).
 
 ## 4. Mapas en texto (prototipo)
 
