@@ -11,6 +11,8 @@ import { themeFor, themes } from "@/data/themes";
 import { badges, sanitizeBadges, type BadgeId } from "@/data/badges";
 import { BadgeIcon } from "@/components/badge-icon";
 import { StampSeal } from "@/components/stamp-seal";
+import { Modal } from "@/components/modal";
+import { Toast } from "@/components/toast";
 import { usePassportStorage } from "@/hooks/use-passport-storage";
 
 // El pasaporte se dibuja siempre en un lienzo fijo de 750 × 1500 y se escala para ajustarse a la pantalla.
@@ -142,13 +144,10 @@ export default function PassportApp() {
     return () => observer.disconnect();
   }, [scaleBox]);
 
-  // Escape cierra lo que esté abierto.
+  // Escape cancela el modo pegar / mover. Las ventanas (<dialog>) ya se cierran solas con Escape.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== "Escape") return;
-      setSelected(null);
-      setResetOpen(false);
-      setBadgePicker(null);
       setPending(null);
       setMoveMode(null);
     };
@@ -491,75 +490,69 @@ export default function PassportApp() {
         )}
 
         {stamp && verse && (
-          <div className="sheet-backdrop" onClick={() => setSelected(null)}>
-            <aside className="detail-sheet" role="dialog" aria-modal="true" aria-label={stamp.title} onClick={(e) => e.stopPropagation()}>
-              <button className="sheet-close" onClick={() => setSelected(null)} aria-label="Cerrar"><X /></button>
-              <StampSeal stamp={stamp} />
-              <h2>{stamp.title}</h2>
-              <p>{stamp.declaration}</p>
-              <blockquote>“{verse.text}”</blockquote>
-              <strong>{stamp.reference} · {verse.version}</strong>
-              <small className="verse-credit">Nueva Traducción Viviente © Tyndale House Foundation</small>
-              <div className="detail-actions">
-                {slots.includes(stamp.id) ? (
-                  <>
-                    <button className="secondary-btn" onClick={() => { setMoveMode(stamp.id); setSelected(null); scrollToPassport(); notify("Toca un espacio vacío para mover el sello."); }}>Mover</button>
-                    <button className="secondary-btn" onClick={removeSelected}>Quitar</button>
-                  </>
-                ) : (
-                  <button className="primary-btn" onClick={() => { place(stamp.id); setSelected(null); }}>Pegar en mi pasaporte</button>
-                )}
-              </div>
-            </aside>
-          </div>
+          <Modal className="detail-sheet" aria-label={stamp.title} onClose={() => setSelected(null)}>
+            <button className="sheet-close" onClick={() => setSelected(null)} aria-label="Cerrar"><X /></button>
+            <StampSeal stamp={stamp} />
+            <h2>{stamp.title}</h2>
+            <p>{stamp.declaration}</p>
+            <blockquote>“{verse.text}”</blockquote>
+            <strong>{stamp.reference} · {verse.version}</strong>
+            <small className="verse-credit">Nueva Traducción Viviente © Tyndale House Foundation</small>
+            <div className="detail-actions">
+              {slots.includes(stamp.id) ? (
+                <>
+                  <button className="secondary-btn" onClick={() => { setMoveMode(stamp.id); setSelected(null); scrollToPassport(); notify("Toca un espacio vacío para mover el sello."); }}>Mover</button>
+                  <button className="secondary-btn" onClick={removeSelected}>Quitar</button>
+                </>
+              ) : (
+                <button className="primary-btn" onClick={() => { place(stamp.id); setSelected(null); }}>Pegar en mi pasaporte</button>
+              )}
+            </div>
+          </Modal>
         )}
 
         {badgePicker !== null && (
-          <div className="sheet-backdrop" onClick={() => setBadgePicker(null)}>
-            <aside className="detail-sheet" role="dialog" aria-modal="true" aria-label="Elige uno de tus gustos" onClick={(e) => e.stopPropagation()}>
-              <button className="sheet-close" onClick={() => setBadgePicker(null)} aria-label="Cerrar"><X /></button>
-              <h2>Elige uno de tus gustos</h2>
-              <p>Aparecerá a la {badgePicker === 0 ? "izquierda" : "derecha"} de tu pasaporte, {badgePicker === 0 ? "debajo del planeta" : "debajo de la corona"}.</p>
-              <div className="badge-options">
-                {badges.map((b) => {
-                  const inOtherSlot = badgeSlots.some((v, i) => v === b.id && i !== badgePicker);
-                  return (
-                    <button
-                      key={b.id}
-                      className={`badge-option ${badgeSlots[badgePicker] === b.id ? "active" : ""}`}
-                      disabled={inOtherSlot}
-                      onClick={() => chooseBadge(badgePicker, b.id)}
-                    >
-                      <BadgeIcon id={b.id} />
-                      <span>{b.label}</span>
-                      {inOtherSlot && <small>Ya lo usas</small>}
-                    </button>
-                  );
-                })}
+          <Modal className="detail-sheet" aria-labelledby="badge-picker-title" onClose={() => setBadgePicker(null)}>
+            <button className="sheet-close" onClick={() => setBadgePicker(null)} aria-label="Cerrar"><X /></button>
+            <h2 id="badge-picker-title">Elige uno de tus gustos</h2>
+            <p>Aparecerá a la {badgePicker === 0 ? "izquierda" : "derecha"} de tu pasaporte, {badgePicker === 0 ? "debajo del planeta" : "debajo de la corona"}.</p>
+            <div className="badge-options">
+              {badges.map((b) => {
+                const inOtherSlot = badgeSlots.some((v, i) => v === b.id && i !== badgePicker);
+                return (
+                  <button
+                    key={b.id}
+                    className={`badge-option ${badgeSlots[badgePicker] === b.id ? "active" : ""}`}
+                    disabled={inOtherSlot}
+                    onClick={() => chooseBadge(badgePicker, b.id)}
+                  >
+                    <BadgeIcon id={b.id} />
+                    <span>{b.label}</span>
+                    {inOtherSlot && <small>Ya lo usas</small>}
+                  </button>
+                );
+              })}
+            </div>
+            {badgeSlots[badgePicker] && (
+              <div className="detail-actions">
+                <button className="secondary-btn" onClick={() => chooseBadge(badgePicker, null)}>Quitar gusto</button>
               </div>
-              {badgeSlots[badgePicker] && (
-                <div className="detail-actions">
-                  <button className="secondary-btn" onClick={() => chooseBadge(badgePicker, null)}>Quitar gusto</button>
-                </div>
-              )}
-            </aside>
-          </div>
+            )}
+          </Modal>
         )}
 
         {resetOpen && (
-          <div className="sheet-backdrop">
-            <aside className="confirm-card" role="dialog" aria-modal="true" aria-label="Empezar de nuevo">
-              <h2>¿Empezar de nuevo?</h2>
-              <p>Se borrará el pasaporte de este dispositivo y se repartirán sellos nuevos.</p>
-              <div>
-                <button className="secondary-btn" onClick={() => setResetOpen(false)}>Seguir editando</button>
-                <button className="primary-btn" onClick={reset}>Sí, empezar</button>
-              </div>
-            </aside>
-          </div>
+          <Modal className="confirm-card" aria-labelledby="reset-title" dismissible={false} onClose={() => setResetOpen(false)}>
+            <h2 id="reset-title">¿Empezar de nuevo?</h2>
+            <p>Se borrará el pasaporte de este dispositivo y se repartirán sellos nuevos.</p>
+            <div>
+              <button className="secondary-btn" onClick={() => setResetOpen(false)} data-autofocus>Seguir editando</button>
+              <button className="primary-btn" onClick={reset}>Sí, empezar</button>
+            </div>
+          </Modal>
         )}
 
-        {toast.msg && <div key={toast.id} className="toast" role="status">{toast.msg}</div>}
+        <Toast id={toast.id} msg={toast.msg} />
       </main>
     </div>
   );

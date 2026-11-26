@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useId, useState } from "react";
+import { useId, useState } from "react";
 import { CaretLeft, CaretRight, Check, DownloadSimple, LockSimple, PencilSimple, ShareNetwork, TShirt } from "@phosphor-icons/react";
 import { AvatarEditor } from "@/components/avatar-editor";
+import { Modal } from "@/components/modal";
 import { ShareCard, useShareImage } from "@/components/challenge-share";
 import { DepthGauge } from "@/components/depth-gauge";
 import { challenge, days, nextRiverLevel, riverLevelFor } from "@/data/challenges/oracion-7-dias";
@@ -309,38 +310,22 @@ function DayPanel({
 }
 
 function ConfirmSave({ day, text, onCancel, onConfirm }: { day: number; text: string; onCancel: () => void; onConfirm: () => void }) {
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onCancel();
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [onCancel]);
-
   return (
-    <div className="sheet-backdrop" onClick={onCancel}>
-      <aside
-        className="confirm-card reto-confirm"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="reto-confirm-title"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <h2 id="reto-confirm-title">¿Guardar el día {day}?</h2>
-        <p className="reto-confirm-text">{text}</p>
-        <p className="reto-confirm-note">
-          <LockSimple aria-hidden="true" weight="bold" /> Una vez termine el día, no lo podrás editar.
-        </p>
-        <div>
-          <button className="secondary-btn" onClick={onCancel}>
-            Seguir escribiendo
-          </button>
-          <button className="primary-btn" onClick={onConfirm} autoFocus>
-            Sí, guardar
-          </button>
-        </div>
-      </aside>
-    </div>
+    <Modal className="confirm-card reto-confirm" aria-labelledby="reto-confirm-title" onClose={onCancel}>
+      <h2 id="reto-confirm-title">¿Guardar el día {day}?</h2>
+      <p className="reto-confirm-text">{text}</p>
+      <p className="reto-confirm-note">
+        <LockSimple aria-hidden="true" weight="bold" /> Una vez termine el día, no lo podrás editar.
+      </p>
+      <div>
+        <button className="secondary-btn" onClick={onCancel}>
+          Seguir escribiendo
+        </button>
+        <button className="primary-btn" onClick={onConfirm} data-autofocus>
+          Sí, guardar
+        </button>
+      </div>
+    </Modal>
   );
 }
 
