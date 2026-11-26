@@ -58,6 +58,7 @@ for (const info of playable) {
     const ending = page.locator(".nv-ending");
     const dialog = page.locator(".nv-dialog-layer");
     let steps = 0;
+    let exitChecked = false;
 
     while (!(await ending.isVisible())) {
       expect(Date.now() < deadline, `${label} no llegó al cierre (paso: ${await currentStep(page)})`).toBe(true);
@@ -65,6 +66,19 @@ for (const info of playable) {
       if (await dialog.isVisible()) {
         if (mobile) await dialog.tap();
         else await page.keyboard.press("Enter");
+        continue;
+      }
+
+      // Una vez por capítulo: «Mapa» a mitad del juego pregunta antes de salir, y se puede seguir jugando.
+      if (!exitChecked) {
+        exitChecked = true;
+        const mapButton = page.getByRole("button", { name: "Mapa" });
+        if (mobile) await mapButton.tap();
+        else await mapButton.click();
+        const confirm = page.getByRole("dialog", { name: "¿Salir del capítulo?" });
+        await expect(confirm).toBeVisible();
+        await confirm.getByRole("button", { name: "Seguir jugando" }).click();
+        await expect(confirm).toBeHidden();
         continue;
       }
 

@@ -9,7 +9,8 @@ const hex = (color: number) => `#${color.toString(16).padStart(6, "0")}`;
 
 // Caja de diálogo al estilo de los juegos: el texto aparece letra por letra y se avanza
 // tocando la pantalla o con Espacio, Enter o E. Mientras está abierta, el juego no se mueve.
-export function DialogBox({ lines, onDone }: { lines: ResolvedLine[]; onDone: () => void }) {
+// `active={false}` deja de escuchar el teclado, por ejemplo mientras hay una ventana encima.
+export function DialogBox({ lines, onDone, active = true }: { lines: ResolvedLine[]; onDone: () => void; active?: boolean }) {
   const [index, setIndex] = useState(0);
   const [shown, setShown] = useState(0);
   const line = lines[index];
@@ -30,6 +31,7 @@ export function DialogBox({ lines, onDone }: { lines: ResolvedLine[]; onDone: ()
   }, [full, index, line.text.length, lines.length, onDone]);
 
   useEffect(() => {
+    if (!active) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.repeat || ![" ", "Enter", "e", "E"].includes(e.key)) return;
       e.preventDefault();
@@ -37,7 +39,7 @@ export function DialogBox({ lines, onDone }: { lines: ResolvedLine[]; onDone: ()
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [advance]);
+  }, [active, advance]);
 
   return (
     <div className="nv-dialog-layer" onPointerDown={advance}>

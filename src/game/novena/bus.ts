@@ -11,6 +11,8 @@ type Events = {
   objective: string | null;
   /** El capítulo terminó. */
   complete: void;
+  /** React pide pausar (true) o seguir (false) mientras muestra una ventana encima del juego. */
+  pause: boolean;
 };
 
 type Handler<T> = (payload: T) => void;

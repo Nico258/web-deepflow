@@ -573,8 +573,18 @@ dialog.reto-avatar{max-width:520px}
 @keyframes nv-rise{from{transform:translateY(12px);opacity:0}}
 @keyframes nv-bounce{50%{transform:translateY(3px)}}
 
-.nv-ending-layer{position:absolute;inset:0;display:grid;place-items:center;padding:16px;background:#0b1020cc;overflow:auto;animation:nv-fade .6s ease-out}
-.nv-ending{width:min(560px,100%);background:var(--nv-night);border:3px solid var(--nv-gold);border-radius:8px;padding:24px 22px;color:var(--nv-cream);display:grid;gap:14px;box-shadow:0 0 40px #f2c35b33}
+/* Ventanas del juego (<dialog> nativo, components/modal.tsx): cierre del capítulo y «¿Salir del capítulo?» */
+dialog.nv-modal{width:min(560px,calc(100% - 32px));max-height:calc(100dvh - 32px);overflow:auto;margin:auto;overscroll-behavior:contain;background:var(--nv-night);border:3px solid var(--nv-gold);border-radius:8px;padding:24px 22px;color:var(--nv-cream);box-shadow:0 0 40px #f2c35b33}
+dialog.nv-modal[open]{display:grid;gap:14px}
+dialog.nv-modal::backdrop{background:#0b1020cc}
+@media(prefers-reduced-motion:no-preference){
+  dialog.nv-modal,dialog.nv-modal::backdrop{transition:opacity .35s ease-out}
+  @starting-style{dialog.nv-modal[open],dialog.nv-modal[open]::backdrop{opacity:0}}
+}
+.nv-confirm{max-width:420px}
+.nv-confirm h2{margin:0;font:700 26px/1.15 var(--font-pixel),monospace}
+.nv-confirm p{margin:0;font-size:16px;line-height:1.5;color:#e9e2cf;text-wrap:pretty}
+.nv-modal-actions{display:flex;flex-wrap:wrap;gap:10px}
 .nv-ending .nv-kicker{color:var(--nv-gold)}
 .nv-ending h2{margin:0;font:700 32px/1.1 var(--font-pixel),monospace}
 .nv-ending blockquote{margin:0;padding:14px 16px;background:#ffffff0d;border-left:4px solid var(--nv-gold);border-radius:4px}
@@ -583,7 +593,6 @@ dialog.reto-avatar{max-width:520px}
 .nv-ending blockquote small{font-weight:500;color:#9fb0cc}
 .nv-reflection{margin:0;font-size:16px;line-height:1.55}
 .nv-ending-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
-@keyframes nv-fade{from{opacity:0}}
 
 @media (max-width:820px){
   .nv-board{grid-template-columns:1fr;padding:12px;gap:16px}

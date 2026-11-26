@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ArrowLeft, ArrowRight, ArrowCounterClockwise } from "@phosphor-icons/react";
+import { Modal } from "@/components/modal";
 import { DialogBox } from "@/components/novena/dialog-box";
 import { NovenaBus, type ResolvedLine } from "@/game/novena/bus";
 import type { Chapter, ChapterInfo } from "@/game/novena/types";
@@ -19,13 +20,15 @@ type Props = {
 };
 
 // Pantalla completa del capítulo: el lienzo de Phaser y, encima, la interfaz en React
-// (barra superior, objetivo, diálogos y cierre).
+// (barra superior, objetivo, diálogos, «¿Salir del capítulo?» y cierre). Las ventanas usan
+// <dialog> nativo (components/modal.tsx): atrapan el foco y se cierran con Escape o «atrás».
 export function GameView({ info, chapter, startAt, next, onExit, onComplete, onPlay }: Props) {
   const hostRef = useRef<HTMLDivElement>(null);
   const [bus] = useState(() => new NovenaBus());
   const [dialog, setDialog] = useState<{ id: number; lines: ResolvedLine[] } | null>(null);
   const [objective, setObjective] = useState<string | null>(null);
   const [finished, setFinished] = useState(false);
+  const [confirmExit, setConfirmExit] = useState(false);
   const [round, setRound] = useState(0);
   const onCompleteRef = useRef(onComplete);
   useEffect(() => {
@@ -68,6 +71,11 @@ export function GameView({ info, chapter, startAt, next, onExit, onComplete, onP
     };
   }, []);
 
+  // Mientras se pregunta si salir, el juego se detiene (ovejas, animaciones, teclado).
+  useEffect(() => {
+    bus.emit("pause", confirmExit);
+  }, [bus, confirmExit]);
+
   const closeDialog = useCallback(() => {
     setDialog(null);
     bus.emit("dialogDone");
@@ -78,7 +86,7 @@ export function GameView({ info, chapter, startAt, next, onExit, onComplete, onP
       <div className="nv-canvas" ref={hostRef} />
 
       <div className="nv-hud">
-        <button type="button" className="nv-btn nv-btn--small" onClick={onExit}>
+        <button type="button" className="nv-btn nv-btn--small" onClick={() => (finished ? onExit() : setConfirmExit(true))}>
           <ArrowLeft size={16} weight="bold" aria-hidden="true" /> Mapa
         </button>
         <span className="nv-hud-title">
@@ -92,11 +100,26 @@ export function GameView({ info, chapter, startAt, next, onExit, onComplete, onP
         </p>
       )}
 
-      {dialog && <DialogBox key={dialog.id} lines={dialog.lines} onDone={closeDialog} />}
+      {dialog && <DialogBox key={dialog.id} lines={dialog.lines} onDone={closeDialog} active={!confirmExit} />}
+
+      {confirmExit && (
+        <Modal className="nv-modal nv-confirm" aria-labelledby="nv-exit-title" onClose={() => setConfirmExit(false)}>
+          <h2 id="nv-exit-title">¿Salir del capítulo?</h2>
+          <p>Vuelves al mapa. El avance dentro del capítulo no se guarda: la próxima vez empieza desde el principio.</p>
+          <div className="nv-modal-actions">
+            <button type="button" className="nv-btn nv-btn--primary" onClick={() => setConfirmExit(false)} data-autofocus>
+              Seguir jugando
+            </button>
+            <button type="button" className="nv-btn" onClick={onExit}>
+              Salir al mapa
+            </button>
+          </div>
+        </Modal>
+      )}
 
       {finished && (
-        <div className="nv-ending-layer">
-          <section className="nv-ending" aria-labelledby="nv-ending-title">
+        // Solo se cierra con sus botones; Escape o «atrás» vuelven al mapa.
+        <Modal className="nv-modal nv-ending" aria-labelledby="nv-ending-title" dismissible={false} onClose={onExit}>
             <p className="nv-kicker">{chapterLabel(info)} completado</p>
             <h2 id="nv-ending-title">{info.title}</h2>
             <blockquote>
@@ -109,7 +132,7 @@ export function GameView({ info, chapter, startAt, next, onExit, onComplete, onP
             <div className="nv-ending-actions">
               {next &&
                 (next.load ? (
-                  <button type="button" className="nv-btn nv-btn--primary" onClick={() => onPlay(next)}>
+                  <button type="button" className="nv-btn nv-btn--primary" onClick={() => onPlay(next)} data-autofocus>
                     Siguiente: {next.title} <ArrowRight size={16} weight="bold" aria-hidden="true" />
                   </button>
                 ) : (
@@ -117,15 +140,14 @@ export function GameView({ info, chapter, startAt, next, onExit, onComplete, onP
                     {chapterLabel(next)}: {next.title} · Próximamente
                   </span>
                 ))}
-              <button type="button" className="nv-btn" onClick={onExit}>
+              <button type="button" className="nv-btn" onClick={onExit} data-autofocus={next?.load ? undefined : true}>
                 Volver al mapa
               </button>
               <button type="button" className="nv-btn nv-btn--ghost" onClick={() => setRound((r) => r + 1)}>
                 <ArrowCounterClockwise size={16} weight="bold" aria-hidden="true" /> Jugar de nuevo
               </button>
             </div>
-          </section>
-        </div>
+        </Modal>
       )}
     </div>
   );

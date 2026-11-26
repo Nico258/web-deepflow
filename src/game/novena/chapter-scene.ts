@@ -24,6 +24,20 @@ const LIGHT: Record<Lighting, { color: number; alpha: number }> = {
   glory: { color: 0xfff1c4, alpha: 0.22 },
 };
 
+/** Teclas de dirección, por `KeyboardEvent.code`. */
+const KEY_DIRS: Record<string, Tile> = {
+  ArrowUp: [0, -1],
+  KeyW: [0, -1],
+  ArrowDown: [0, 1],
+  KeyS: [0, 1],
+  ArrowLeft: [-1, 0],
+  KeyA: [-1, 0],
+  ArrowRight: [1, 0],
+  KeyD: [1, 0],
+};
+/** Hasta cuántas casillas de distancia se ve el nombre de un personaje. */
+const LABEL_RANGE = 3;
+
 const center = (t: Tile) => ({ x: t[0] * TILE + TILE / 2, y: t[1] * TILE + TILE / 2 });
 
 type Figure = Phaser.GameObjects.Container;
@@ -74,14 +88,18 @@ export class ChapterScene extends Phaser.Scene {
   private grid: string[][] = [];
   private ground!: Phaser.GameObjects.Graphics;
   private overlay!: Phaser.GameObjects.Rectangle;
-  private glows: Phaser.GameObjects.Arc[] = [];
+  private glows: Phaser.GameObjects.Image[] = [];
 
   private player!: Figure;
   private playerTile: Tile = [0, 0];
   private facing: Tile = [0, 1];
   private moving = false;
   private path: Tile[] = [];
+  /** Adónde lleva `path`, para buscar otro camino si una oveja se cruza. */
+  private pathGoals: Tile[] | null = null;
   private pendingTalk: Person | null = null;
+  /** Una tecla de dirección que se soltó antes de que el juego la viera: igual cuenta como un paso. */
+  private queuedDir: Tile | null = null;
 
   private people = new Map<string, Person>();
   private sheep: Sheep[] = [];
@@ -118,7 +136,8 @@ export class ChapterScene extends Phaser.Scene {
     this.drawMap();
 
     for (const actor of this.chapter.actors) {
-      const view = this.makeFigure(actor.color, actor.floating ? "angel" : "person", actor.name);
+      // Los ángeles no llevan nombre encima: se presentan en el diálogo.
+      const view = this.makeFigure(actor.color, actor.floating ? "angel" : "person", actor.floating ? undefined : actor.name);
       const person: Person = { actor, tile: [...actor.at], view, hidden: !!actor.hidden };
       this.place(view, actor.at, actor.floating);
       view.setVisible(!person.hidden);
@@ -127,8 +146,10 @@ export class ChapterScene extends Phaser.Scene {
     }
 
     this.playerTile = [...this.chapter.player.at];
-    this.player = this.makeFigure(this.chapter.player.color, "player", this.chapter.player.name);
+    // El jugador no lleva nombre encima: ya sabe quién es, y así no tapa a los demás.
+    this.player = this.makeFigure(this.chapter.player.color, "player");
     this.place(this.player, this.playerTile);
+    this.updateLabels();
 
     for (const at of this.chapter.herd?.sheep ?? []) {
       const s: Sheep = { tile: [...at], view: this.makeFigure(0xf4f1e8, "sheep"), penned: false, moving: false };
@@ -143,9 +164,11 @@ export class ChapterScene extends Phaser.Scene {
       row.forEach((c, x) => {
         if (c !== "*") return;
         const { x: cx, y: cy } = center([x, y]);
-        const glow = this.add.circle(cx, cy, TILE * 3.5, 0xffa040, 0.2).setDepth(1001);
-        glow.setBlendMode(Phaser.BlendModes.ADD);
-        this.tweens.add({ targets: glow, alpha: 0.12, scale: 0.92, duration: 700, yoyo: true, repeat: -1, ease: "Sine.inOut" });
+        // Luz suave que se desvanece hacia los bordes; va sobre la capa de noche para iluminar.
+        const glow = this.add.image(cx, cy, this.glowTexture()).setDepth(1001).setTint(0xffa040).setAlpha(0.32);
+        glow.setDisplaySize(TILE * 8, TILE * 8).setBlendMode(Phaser.BlendModes.ADD);
+        const base = glow.scale;
+        this.tweens.add({ targets: glow, alpha: 0.22, scale: base * 0.94, duration: 700, yoyo: true, repeat: -1, ease: "Sine.inOut" });
         this.glows.push(glow);
       }),
     );
@@ -159,6 +182,10 @@ export class ChapterScene extends Phaser.Scene {
     this.scale.on("resize", this.fitZoom, this);
 
     this.setupInput();
+
+    // React pausa el juego mientras hay una ventana abierta (por ejemplo, «¿Salir del capítulo?»).
+    const offPause = this.bus.on("pause", (paused) => (paused ? this.scene.pause() : this.scene.resume()));
+    this.events.once(Phaser.Scenes.Events.DESTROY, offPause);
 
     // Para depurar desde la consola del navegador y para las pruebas: window.__novena
     if (process.env.NODE_ENV !== "production") {
@@ -199,6 +226,11 @@ export class ChapterScene extends Phaser.Scene {
       const target = this.personAt(front) ?? this.adjacentPeople()[0];
       if (target) void this.talkTo(target);
     };
+    // Una pulsación muy corta puede soltarse antes del siguiente cuadro y `isDown` no la vería.
+    kb.on("keydown", (e: KeyboardEvent) => {
+      const dir = KEY_DIRS[e.code];
+      if (dir && !e.repeat && !this.busy) this.queuedDir = dir;
+    });
     kb.on("keydown-SPACE", interact);
     kb.on("keydown-ENTER", interact);
     kb.on("keydown-E", interact);
@@ -210,11 +242,12 @@ export class ChapterScene extends Phaser.Scene {
       const person = this.personAt(tile, true);
       if (person) {
         const goals = DIRS.map(([dx, dy]): Tile => [person.tile[0] + dx, person.tile[1] + dy]).filter((t) => this.walkable(t));
-        if (goals.some((g) => same(g, this.playerTile))) this.path = [];
+        if (goals.some((g) => same(g, this.playerTile))) this.clearPath();
         else {
           const route = this.findPath(goals);
           if (!route) return;
           this.path = route;
+          this.pathGoals = goals;
         }
         this.pendingTalk = person;
         this.tapMark(person.tile);
@@ -222,6 +255,7 @@ export class ChapterScene extends Phaser.Scene {
         const route = this.findPath([tile]);
         if (!route) return;
         this.path = route;
+        this.pathGoals = [tile];
         this.pendingTalk = null;
         this.tapMark(tile);
       }
@@ -234,26 +268,34 @@ export class ChapterScene extends Phaser.Scene {
     if (this.busy || this.moving) return;
     const k = this.keys;
     const held: Tile | null =
-      k.up.isDown || k.w.isDown ? [0, -1] : k.down.isDown || k.s.isDown ? [0, 1] : k.left.isDown || k.a.isDown ? [-1, 0] : k.right.isDown || k.d.isDown ? [1, 0] : null;
+      k.up.isDown || k.w.isDown ? [0, -1] : k.down.isDown || k.s.isDown ? [0, 1] : k.left.isDown || k.a.isDown ? [-1, 0] : k.right.isDown || k.d.isDown ? [1, 0] : this.queuedDir;
+    this.queuedDir = null;
     if (held) {
-      this.path = [];
-      this.pendingTalk = null;
+      this.clearPath();
       this.tryStep(held);
       return;
     }
     const next = this.path.shift();
     if (next) {
-      if (!this.tryStep([next[0] - this.playerTile[0], next[1] - this.playerTile[1]])) {
-        this.path = [];
-        this.pendingTalk = null;
-      }
+      if (this.tryStep([next[0] - this.playerTile[0], next[1] - this.playerTile[1]])) return;
+      // Algo se cruzó (una oveja): se busca otro camino al mismo destino; si no hay, se detiene.
+      const route = this.pathGoals && this.findPath(this.pathGoals);
+      if (route?.length) this.path = route;
+      else this.clearPath();
       return;
     }
+    this.pathGoals = null;
     const target = this.pendingTalk;
     if (target) {
       this.pendingTalk = null;
       if (manhattan(target.tile, this.playerTile) === 1) void this.talkTo(target);
     }
+  }
+
+  private clearPath() {
+    this.path = [];
+    this.pathGoals = null;
+    this.pendingTalk = null;
   }
 
   private tryStep(dir: Tile) {
@@ -279,6 +321,7 @@ export class ChapterScene extends Phaser.Scene {
   }
 
   private afterPlayerMove() {
+    this.updateLabels();
     const goal = this.step?.goal;
     if (goal?.type === "reach" && inZone(this.playerTile, goal.zone)) void this.progress(() => this.finishStep());
     else this.checkHerd();
@@ -288,8 +331,8 @@ export class ChapterScene extends Phaser.Scene {
 
   private async progress(fn: () => Promise<void>) {
     this.busy = true;
-    this.path = [];
-    this.pendingTalk = null;
+    this.clearPath();
+    this.queuedDir = null;
     try {
       await fn();
     } finally {
@@ -588,10 +631,10 @@ export class ChapterScene extends Phaser.Scene {
   }
 
   private teleportPlayer(tile: Tile) {
-    this.path = [];
-    this.pendingTalk = null;
+    this.clearPath();
     this.playerTile = [...tile];
     this.place(this.player, tile);
+    this.updateLabels();
   }
 
   // ───────── Mundo ─────────
@@ -648,7 +691,8 @@ export class ChapterScene extends Phaser.Scene {
       }
       for (const [dx, dy] of DIRS) {
         const n: Tile = [cur[0] + dx, cur[1] + dy];
-        if (prev.has(key(n)) || !this.walkable(n)) continue;
+        // Las ovejas estorban, salvo si el destino es justo donde está una (tocar una oveja).
+        if (prev.has(key(n)) || !this.walkable(n) || (this.sheepAt(n) && !goalKeys.has(key(n)))) continue;
         prev.set(key(n), cur);
         queue.push(n);
       }
@@ -723,7 +767,8 @@ export class ChapterScene extends Phaser.Scene {
       const label = this.add
         .text(0, -15, name, { fontFamily: "monospace", fontSize: "6px", color: "#ffffff", stroke: "#00000099", strokeThickness: 2 })
         .setOrigin(0.5, 1)
-        .setResolution(4);
+        .setResolution(4)
+        .setName("label");
       parts.push(label);
     }
     return this.add.container(0, 0, parts);
@@ -740,11 +785,37 @@ export class ChapterScene extends Phaser.Scene {
     mark?.setPosition(fx * 6, fy === -1 ? -11 : fy === 1 ? 8 : 2);
   }
 
+  /** El nombre de cada personaje se ve solo cuando el jugador está cerca, para que no se encimen. */
+  private updateLabels() {
+    for (const p of this.people.values()) {
+      const label = p.view.getByName("label") as Phaser.GameObjects.Text | null;
+      label?.setVisible(manhattan(p.tile, this.playerTile) <= LABEL_RANGE);
+    }
+  }
+
   private startBob(p: Person) {
     p.bob?.stop();
     const c = center(p.tile);
     p.view.y = c.y;
     p.bob = this.tweens.add({ targets: p.view, y: c.y - 3, duration: 1100, yoyo: true, repeat: -1, ease: "Sine.inOut" });
+  }
+
+  /** Textura de un círculo blanco que se desvanece hacia afuera, para las luces. Se crea una vez. */
+  private glowTexture() {
+    const key = "nv-glow";
+    if (this.textures.exists(key)) return key;
+    const size = 64;
+    const tex = this.textures.createCanvas(key, size, size)!;
+    const ctx = tex.getContext();
+    const g = ctx.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
+    g.addColorStop(0, "rgba(255,255,255,1)");
+    g.addColorStop(0.45, "rgba(255,255,255,0.55)");
+    g.addColorStop(1, "rgba(255,255,255,0)");
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, size, size);
+    tex.refresh();
+    tex.setFilter(Phaser.Textures.FilterMode.LINEAR);
+    return key;
   }
 
   private setGlows(mode: Lighting) {

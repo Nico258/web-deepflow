@@ -41,13 +41,14 @@ export type Step = {
 
 export type Actor = {
   id: string;
+  /** Se ve en los diálogos y encima del personaje cuando el jugador está a 3 casillas o menos. */
   name: string;
   at: Tile;
   /** Color del cuadro mientras no haya sprite. */
   color: number;
   /** Empieza oculto hasta una acción `show`. */
   hidden?: boolean;
-  /** Flota y no bloquea el paso (ángeles). */
+  /** Flota y no bloquea el paso (ángeles). No lleva nombre encima: se presenta en el diálogo. */
   floating?: boolean;
   /** Qué diálogo abre al hablarle, según el id del paso actual; `default` para el resto. */
   talk?: Record<string, string>;

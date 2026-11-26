@@ -150,7 +150,7 @@ Las filas pueden tener distinto largo: el motor completa con `#`. Los personajes
 ### Decidido
 
 - `localStorage`, clave `deepflow:novena:v1`: los capítulos completados, con su fecha. Nada más: no hay nombre ni textos.
-- No se guarda el avance **dentro** de un capítulo: si se sale a la mitad, se empieza de nuevo. Con 5 minutos por capítulo no vale la pena la complejidad.
+- No se guarda el avance **dentro** de un capítulo: si se sale a la mitad, se empieza de nuevo. Con 5 minutos por capítulo no vale la pena la complejidad. Por eso el botón «Mapa» pregunta antes de salir, y el juego se detiene mientras tanto.
 - Si `localStorage` no está disponible (modo privado estricto), el juego funciona igual, pero no recuerda qué se completó.
 
 ## 7. Plan de trabajo
