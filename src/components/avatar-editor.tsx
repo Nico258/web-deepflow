@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Shuffle, X } from "@phosphor-icons/react";
 import { AvatarFigure } from "@/components/avatar-figure";
+import { Modal } from "@/components/modal";
 import {
   accessories,
   bottomColors,
@@ -55,97 +56,81 @@ export function AvatarEditor({
     !(section.field === "bottom" && avatar.bottom === "jean") &&
     !(section.field === "hair" && avatar.hair === "gorro-natacion");
 
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
-
   return (
-    <div className="sheet-backdrop" onClick={onClose}>
-      <aside
-        className="detail-sheet reto-avatar"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="reto-avatar-title"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <button className="sheet-close" onClick={onClose} aria-label="Cerrar">
-          <X aria-hidden="true" />
-        </button>
-        <h2 id="reto-avatar-title">Personaliza tu monigote</h2>
-        <p className="reto-avatar-sub">Así aparecerás en el río y en la imagen final.</p>
+    <Modal className="detail-sheet reto-avatar" aria-labelledby="reto-avatar-title" onClose={onClose}>
+      <button className="sheet-close" onClick={onClose} aria-label="Cerrar">
+        <X aria-hidden="true" />
+      </button>
+      <h2 id="reto-avatar-title">Personaliza tu monigote</h2>
+      <p className="reto-avatar-sub">Así aparecerás en el río y en la imagen final.</p>
 
-        <svg className="reto-avatar-preview" viewBox="10 0 100 166" aria-hidden="true">
-          <ellipse cx="60" cy="160" rx="26" ry="4" fill="#173b5c" opacity=".08" />
-          <AvatarFigure avatar={avatar} level={level} />
-        </svg>
+      <svg className="reto-avatar-preview" viewBox="10 0 100 166" aria-hidden="true">
+        <ellipse cx="60" cy="160" rx="26" ry="4" fill="#173b5c" opacity=".08" />
+        <AvatarFigure avatar={avatar} level={level} />
+      </svg>
 
-        <div className="reto-avatar-tabs" role="tablist" aria-label="Partes del monigote">
-          {sections.map((s, i) => (
+      <div className="reto-avatar-tabs" role="tablist" aria-label="Partes del monigote">
+        {sections.map((s, i) => (
+          <button
+            key={s.field}
+            role="tab"
+            aria-selected={tab === i}
+            className={tab === i ? "is-active" : ""}
+            onClick={() => setTab(i)}
+          >
+            {s.label}
+          </button>
+        ))}
+      </div>
+
+      <div className="reto-avatar-options" role="tabpanel" aria-label={section.label}>
+        {section.options.map((o) => {
+          const active = avatar[section.field] === o.id;
+          const sample = { ...avatar, [section.field]: o.id } as Avatar;
+          return (
             <button
-              key={s.field}
-              role="tab"
-              aria-selected={tab === i}
-              className={tab === i ? "is-active" : ""}
-              onClick={() => setTab(i)}
+              key={o.id}
+              className={`reto-avatar-option ${active ? "is-active" : ""}`}
+              aria-pressed={active}
+              onClick={() => onChange({ [section.field]: o.id })}
             >
-              {s.label}
+              <svg viewBox={section.crop} aria-hidden="true">
+                <AvatarFigure avatar={sample} />
+              </svg>
+              <span>{o.label}</span>
             </button>
-          ))}
-        </div>
+          );
+        })}
+      </div>
 
-        <div className="reto-avatar-options" role="tabpanel" aria-label={section.label}>
-          {section.options.map((o) => {
-            const active = avatar[section.field] === o.id;
-            const sample = { ...avatar, [section.field]: o.id } as Avatar;
+      {showColors && section.color && (
+        <div className="reto-avatar-colors" role="group" aria-label="Color">
+          {section.color.list.map((c) => {
+            const field = section.color!.field;
+            const active = avatar[field] === c.id;
             return (
               <button
-                key={o.id}
-                className={`reto-avatar-option ${active ? "is-active" : ""}`}
+                key={c.id}
+                className={`color-choice ${active ? "active" : ""}`}
+                style={{ background: c.hex }}
+                aria-label={c.label}
                 aria-pressed={active}
-                onClick={() => onChange({ [section.field]: o.id })}
-              >
-                <svg viewBox={section.crop} aria-hidden="true">
-                  <AvatarFigure avatar={sample} />
-                </svg>
-                <span>{o.label}</span>
-              </button>
+                title={c.label}
+                onClick={() => onChange({ [field]: c.id })}
+              />
             );
           })}
         </div>
+      )}
 
-        {showColors && section.color && (
-          <div className="reto-avatar-colors" role="group" aria-label="Color">
-            {section.color.list.map((c) => {
-              const field = section.color!.field;
-              const active = avatar[field] === c.id;
-              return (
-                <button
-                  key={c.id}
-                  className={`color-choice ${active ? "active" : ""}`}
-                  style={{ background: c.hex }}
-                  aria-label={c.label}
-                  aria-pressed={active}
-                  title={c.label}
-                  onClick={() => onChange({ [field]: c.id })}
-                />
-              );
-            })}
-          </div>
-        )}
-
-        <div className="detail-actions">
-          <button className="secondary-btn" onClick={() => onChange(randomAvatar())}>
-            <Shuffle aria-hidden="true" weight="bold" /> Al azar
-          </button>
-          <button className="primary-btn" onClick={onClose}>
-            Listo
-          </button>
-        </div>
-      </aside>
-    </div>
+      <div className="detail-actions">
+        <button className="secondary-btn" onClick={() => onChange(randomAvatar())}>
+          <Shuffle aria-hidden="true" weight="bold" /> Al azar
+        </button>
+        <button className="primary-btn" onClick={onClose}>
+          Listo
+        </button>
+      </div>
+    </Modal>
   );
 }
