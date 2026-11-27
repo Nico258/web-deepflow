@@ -19,6 +19,8 @@ const HERD_DEFAULTS = { paceMs: 320, homing: 0.2, helpAfterMs: 45_000, helpRampM
 const WANDER_RADIUS = 2;
 /** Cuánto hay que mantener el dedo (o el clic) para caminar hacia él en vez de ir a un punto. */
 const HOLD_MS = 220;
+/** Tras cerrar un diálogo o una ventana, cuánto se ignoran los toques y teclas (el mismo toque no camina). */
+const FREED_MS = 250;
 
 const GROUND: Record<string, number> = { ",": 0xb89c6a, g: 0xb89c6a, _: 0xa9a294, "#": 0x77736c, "~": 0x3f73a6 };
 const GRASS = 0x6f9a4f;
@@ -202,7 +204,11 @@ export class ChapterScene extends Phaser.Scene {
     this.setupInput();
 
     // React pausa el juego mientras hay una ventana abierta (por ejemplo, «¿Salir del capítulo?»).
-    const offPause = this.bus.on("pause", (paused) => (paused ? this.scene.pause() : this.scene.resume()));
+    const offPause = this.bus.on("pause", (paused) => {
+      if (paused) return this.scene.pause();
+      this.scene.resume();
+      this.idleSince = this.time.now;
+    });
     this.events.once(Phaser.Scenes.Events.DESTROY, offPause);
 
     // Para depurar desde la consola del navegador y para las pruebas: window.__novena
@@ -240,7 +246,7 @@ export class ChapterScene extends Phaser.Scene {
     const K = Phaser.Input.Keyboard.KeyCodes;
     this.keys = kb.addKeys({ up: K.UP, down: K.DOWN, left: K.LEFT, right: K.RIGHT, w: K.W, a: K.A, s: K.S, d: K.D }) as typeof this.keys;
     const interact = () => {
-      if (this.busy || this.moving || this.time.now - this.idleSince < 250) return;
+      if (this.busy || this.moving || this.justFreed()) return;
       const front: Tile = [this.playerTile[0] + this.facing[0], this.playerTile[1] + this.facing[1]];
       const target = this.personAt(front) ?? this.adjacentPeople()[0];
       if (target) void this.talkTo(target);
@@ -260,7 +266,8 @@ export class ChapterScene extends Phaser.Scene {
     this.input.on("pointerup", release);
     this.input.on("pointerupoutside", release);
     this.input.on("pointerdown", (p: Phaser.Input.Pointer) => {
-      if (this.busy) return;
+      // El toque que cerró un diálogo o una ventana no cuenta como toque en el mapa.
+      if (this.busy || this.justFreed()) return;
       const tile = this.pointerTile(p);
       const person = this.personAt(tile, true);
       this.hold = person ? null : { pointer: p, since: this.time.now };
@@ -374,6 +381,11 @@ export class ChapterScene extends Phaser.Scene {
   }
 
   // ───────── Pasos y acciones ─────────
+
+  /** Si el juego se acaba de liberar (se cerró un diálogo o una ventana): ese mismo toque o tecla no cuenta. */
+  private justFreed() {
+    return this.time.now - this.idleSince < FREED_MS;
+  }
 
   private async progress(fn: () => Promise<void>) {
     this.busy = true;

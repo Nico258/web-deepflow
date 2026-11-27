@@ -42,7 +42,16 @@ export function DialogBox({ lines, onDone, active = true }: { lines: ResolvedLin
   }, [active, advance]);
 
   return (
-    <div className="nv-dialog-layer" onPointerDown={advance}>
+    <div
+      className="nv-dialog-layer"
+      onPointerDown={(e) => {
+        // En el celular, después de un toque el navegador manda además un «clic de ratón» al mismo
+        // punto. Al cerrar el último cuadro la caja ya no está y ese clic caería en el mapa, y el
+        // personaje caminaría hacia allá. Cancelar el pointerdown evita ese clic de más.
+        e.preventDefault();
+        advance();
+      }}
+    >
       <div className={`nv-dialog${line.speaker ? "" : " nv-dialog--narrator"}`} role="dialog" aria-live="polite">
         {line.speaker && (
           <div className="nv-dialog-speaker">
