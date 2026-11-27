@@ -1,7 +1,7 @@
 // Reglas de banderas y de qué dice cada personaje, sin Phaser: las usan el motor y el validador.
 // Ver docs/specs/07-novena-interactiva.md §3.
 
-import type { Actor, Condition, Flags, TalkCase } from "./types";
+import type { Actor, Condition, Flags, Line, TalkCase } from "./types";
 
 /** Una bandera o varias, siempre como lista. */
 export const flagList = (f: Flags | undefined): string[] => (f === undefined ? [] : Array.isArray(f) ? f : [f]);
@@ -30,3 +30,28 @@ export function matches(cond: Condition | undefined, step: string | undefined, f
 /** El caso que toca ahora: el primero cuya condición se cumple. */
 export const currentTalk = (actor: Actor, step: string | undefined, flags: ReadonlySet<string>) =>
   talkCases(actor).find((c) => matches(c.when, step, flags));
+
+/** Las elecciones con que termina un diálogo (vacío si no termina en una elección). */
+export const choicesOf = (lines: Line[] | undefined) => lines?.[lines.length - 1]?.choices ?? [];
+
+/** Los diálogos a los que se llega desde uno siguiendo el `next` de sus elecciones, incluido él. */
+export function dialogChain(dialogs: Record<string, Line[]>, id: string): Set<string> {
+  const seen = new Set<string>();
+  const queue = [id];
+  while (queue.length) {
+    const cur = queue.pop()!;
+    if (seen.has(cur)) continue;
+    seen.add(cur);
+    for (const c of choicesOf(dialogs[cur])) if (c.next) queue.push(c.next);
+  }
+  return seen;
+}
+
+/**
+ * Banderas que puede marcar hablar con alguien en un caso: las del caso y las de cualquier
+ * elección de su diálogo (o de los que siguen).
+ */
+export function caseSets(dialogs: Record<string, Line[]>, c: TalkCase): string[] {
+  const fromChoices = [...dialogChain(dialogs, c.dialog)].flatMap((d) => choicesOf(dialogs[d]).flatMap((ch) => flagList(ch.set)));
+  return [...flagList(c.set), ...fromChoices];
+}

@@ -1,8 +1,8 @@
 import * as Phaser from "phaser";
 import type { NovenaBus, ResolvedLine } from "./bus";
 import { DIRS, SOLID, inZone, manhattan, same, toGrid } from "./map";
-import { currentTalk, flagList } from "./rules";
-import type { Action, Actor, Chapter, Flags, HerdConfig, Lighting, Step, Tile } from "./types";
+import { caseSets, choicesOf, currentTalk, flagList, matches } from "./rules";
+import type { Action, Actor, Chapter, Choice, Flags, HerdConfig, Line, Lighting, Step, Tile } from "./types";
 
 // Motor de un capítulo. Lee el guion (src/data/novena/capitulos/*) y lo vuelve jugable:
 // dibuja el mapa, mueve al jugador por casillas, recorre los pasos y le pide a React
@@ -479,6 +479,7 @@ export class ChapterScene extends Phaser.Scene {
   }
 
   private async runAction(a: Action) {
+    if (a.when && !matches(a.when, this.step?.id, this.flags)) return;
     const cam = this.cameras.main;
     switch (a.type) {
       case "say":
@@ -536,21 +537,38 @@ export class ChapterScene extends Phaser.Scene {
     }
   }
 
-  private say(id: string) {
-    const lines = this.chapter.dialogs[id];
-    if (!lines?.length) {
-      console.warn(`[novena] No existe el diálogo «${id}»`);
-      return Promise.resolve();
+  /**
+   * Abre un diálogo y espera a que se cierre. Si termina en una elección, aplica las banderas
+   * de la respuesta elegida y sigue con su `next`, si tiene.
+   */
+  private async say(id: string) {
+    for (let next: string | undefined = id; next; ) {
+      const lines: Line[] | undefined = this.chapter.dialogs[next];
+      if (!lines?.length) {
+        console.warn(`[novena] No existe el diálogo «${next}»`);
+        return;
+      }
+      const picked = await this.showLines(lines);
+      const choice: Choice | undefined = picked === null ? undefined : choicesOf(lines)[picked];
+      if (!choice) return;
+      this.setFlags(choice.set, true);
+      this.setFlags(choice.unset, false);
+      next = choice.next;
     }
-    const resolved: ResolvedLine[] = lines.map(({ who, text }) => {
-      if (who === "narrator") return { speaker: null, text, color: null };
-      if (who === "player") return { speaker: this.chapter.player.name, text, color: this.chapter.player.color };
+  }
+
+  /** Le pide a React que muestre las líneas. Devuelve la respuesta elegida, o null si no había elección. */
+  private showLines(lines: Line[]) {
+    const resolved: ResolvedLine[] = lines.map(({ who, text, choices }) => {
+      const extra = choices?.length ? { choices: choices.map((c) => c.text) } : {};
+      if (who === "narrator") return { speaker: null, text, color: null, ...extra };
+      if (who === "player") return { speaker: this.chapter.player.name, text, color: this.chapter.player.color, ...extra };
       const actor = this.people.get(who)?.actor;
-      return { speaker: actor?.name ?? who, text, color: actor?.color ?? null };
+      return { speaker: actor?.name ?? who, text, color: actor?.color ?? null, ...extra };
     });
     const closed = this.bus.once("dialogDone");
     this.bus.emit("dialog", resolved);
-    return closed.then(() => undefined);
+    return closed;
   }
 
   /** Para el atajo de desarrollo: deja el mundo como si el paso ya se hubiera jugado, sin diálogos. */
@@ -558,7 +576,8 @@ export class ChapterScene extends Phaser.Scene {
     const goal = step.goal;
     if (goal.type === "herd") this.penAllSheep();
     const done = (actions?: Action[]) => {
-      for (const a of actions ?? []) if (a.type === "set" || a.type === "unset") this.setFlags(a.flag, a.type === "set");
+      for (const a of actions ?? [])
+        if ((a.type === "set" || a.type === "unset") && matches(a.when, step.id, this.flags)) this.setFlags(a.flag, a.type === "set");
     };
     done(step.onStart);
     // La meta se da por cumplida: las banderas que pide quedan marcadas, y hablar con alguien
@@ -572,6 +591,7 @@ export class ChapterScene extends Phaser.Scene {
     }
     done(step.onDone);
     for (const a of [...(step.onStart ?? []), ...(step.onDone ?? [])]) {
+      if (!matches(a.when, step.id, this.flags)) continue;
       if (a.type === "show" || a.type === "hide") {
         for (const p of this.peopleIn(a.actor)) {
           p.hidden = a.type === "hide";
@@ -797,7 +817,7 @@ export class ChapterScene extends Phaser.Scene {
     return [...this.people.values()].find((p) => {
       if (p.hidden) return false;
       const talk = currentTalk(p.actor, this.step?.id, this.flags);
-      return flagList(talk?.set).some((f) => missing.includes(f));
+      return !!talk && caseSets(this.chapter.dialogs, talk).some((f) => missing.includes(f));
     });
   }
 

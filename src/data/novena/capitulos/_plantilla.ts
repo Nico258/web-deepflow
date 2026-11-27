@@ -56,15 +56,33 @@ const chapter: Chapter = {
     // Meta `flags`: se cumple cuando están marcadas todas, en cualquier orden. Aquí hay una sola;
     // con varias («toco-casa-1», «toco-casa-2»…), {n} y {total} muestran cuántas van.
     { id: "saludar", objective: "Saluda a la vecina ({n}/{total})", goal: { type: "flags", all: ["saludo-vecina"] } },
-    { id: "salir", objective: "Sal por el camino", goal: { type: "reach", zone: { x: 18, y: 4, w: 2, h: 1 } } },
+    {
+      id: "salir",
+      objective: "Sal por el camino",
+      goal: { type: "reach", zone: { x: 18, y: 4, w: 2, h: 1 } },
+      // Con `when`, la acción solo se hace si se cumple: aquí, si se eligió ir a la fiesta.
+      onDone: [{ type: "say", dialog: "camino-a-la-fiesta", when: { flags: ["va-a-la-fiesta"] } }],
+    },
   ],
 
   dialogs: {
     intro: [{ who: "narrator", text: "Aquí empieza el capítulo." }],
+    // La última línea puede traer respuestas para elegir (`choices`). Cada una puede marcar
+    // banderas y abrir otro diálogo con `next`.
     saludo: [
       { who: "vecino", text: "¡Hola!" },
-      { who: "player", text: "¡Hola!" },
+      {
+        who: "vecino",
+        text: "¿Vienes a la fiesta esta noche?",
+        choices: [
+          { text: "¡Claro que sí!", set: "va-a-la-fiesta", next: "fiesta-si" },
+          { text: "Hoy no puedo.", next: "fiesta-no" },
+        ],
+      },
     ],
+    "fiesta-si": [{ who: "vecino", text: "¡Qué bien! Te guardo un pan." }],
+    "fiesta-no": [{ who: "vecino", text: "Bueno, otro día será." }],
+    "camino-a-la-fiesta": [{ who: "narrator", text: "Y ahora, a la fiesta." }],
     vecina: [{ who: "vecina", text: "¡Qué gusto verte! Saluda a tu mamá de mi parte." }],
     "vecina-otra-vez": [{ who: "vecina", text: "¿No se te olvida algo? Ah, no: ya me saludaste." }],
   },

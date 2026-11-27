@@ -1,12 +1,16 @@
 // Canal entre el juego (Phaser) y la interfaz (React). El juego avisa qué mostrar
 // y espera a que la persona termine de leer; React no toca el mundo del juego.
 
-export type ResolvedLine = { speaker: string | null; text: string; color: number | null };
+/** `choices`: textos de las respuestas, solo en la última línea si el diálogo termina en una elección. */
+export type ResolvedLine = { speaker: string | null; text: string; color: number | null; choices?: string[] };
 
 type Events = {
-  /** Abre un diálogo. React responde con `dialogDone` al cerrar la última línea. */
+  /**
+   * Abre un diálogo. React responde con `dialogDone` al cerrar la última línea: con el número
+   * de la respuesta elegida (desde 0) si había elección, o null si no.
+   */
   dialog: ResolvedLine[];
-  dialogDone: void;
+  dialogDone: number | null;
   /** Objetivo visible arriba; null lo oculta. */
   objective: string | null;
   /** El capítulo terminó. */

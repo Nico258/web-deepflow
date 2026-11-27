@@ -76,10 +76,13 @@ export function GameView({ info, chapter, startAt, next, onExit, onComplete, onP
     bus.emit("pause", confirmExit);
   }, [bus, confirmExit]);
 
-  const closeDialog = useCallback(() => {
-    setDialog(null);
-    bus.emit("dialogDone");
-  }, [bus]);
+  const closeDialog = useCallback(
+    (choice: number | null) => {
+      setDialog(null);
+      bus.emit("dialogDone", choice);
+    },
+    [bus],
+  );
 
   return (
     <div className="nv-game">

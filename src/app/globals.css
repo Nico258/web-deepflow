@@ -570,6 +570,12 @@ dialog.reto-avatar{max-width:520px}
 .nv-portrait{width:22px;height:22px;border-radius:3px;background:#8a6a3a;border:2px solid #fff6df}
 .nv-dialog-next{position:absolute;right:12px;bottom:6px;font-size:12px;opacity:0}
 .nv-dialog-next.is-ready{opacity:1;animation:nv-bounce .8s ease-in-out infinite}
+.nv-choices{display:grid;gap:8px;margin-top:12px;cursor:default}
+.nv-choice{display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:10px 12px;min-height:44px;background:#fffdf5;color:#2a1d07;border:2px solid #2a1d07;border-radius:4px;font:600 16px/1.3 var(--font-pixel),monospace;cursor:pointer}
+.nv-choice span{display:inline-grid;place-items:center;min-width:22px;height:22px;border-radius:3px;background:#2a1d07;color:#fff6df;font-size:13px}
+.nv-choice:hover,.nv-choice:focus-visible{background:#f2c35b;outline:none}
+.nv-choice:focus-visible{box-shadow:0 0 0 3px #2a1d07}
+.nv-dialog--narrator .nv-choice{font-style:normal}
 @keyframes nv-rise{from{transform:translateY(12px);opacity:0}}
 @keyframes nv-bounce{50%{transform:translateY(3px)}}
 

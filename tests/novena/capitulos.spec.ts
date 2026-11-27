@@ -9,8 +9,10 @@ import { validateChapter } from "@/game/novena/validate";
 //
 // 1. «El guion es válido»: corre el validador (sin navegador, en menos de un segundo).
 // 2. «Se juega de punta a punta»: abre el capítulo y lo recorre sin jugarlo de verdad.
-//    Cierra los diálogos al instante (con toques en el celular y con Enter en el computador),
-//    toca de verdad a la persona con quien hay que hablar (en `flags`, a quien marca una bandera
+//    Cierra los diálogos al instante (con toques en el celular y con Enter en el computador).
+//    Si un diálogo pide elegir, la primera vez elige la primera respuesta, la segunda vez la
+//    segunda, etc. (así, si una respuesta vuelve a preguntar, prueba con la siguiente).
+//    En cada paso, toca de verdad a la persona con quien hay que hablar (en `flags`, a quien marca una bandera
 //    que falta) y el resto de las metas las cumple con window.__novena.completeStep(): llega a la
 //    zona o mete las ovejas al corral de una vez.
 //    Termina cuando aparece el cierre con el versículo.
@@ -60,11 +62,26 @@ for (const info of playable) {
     const dialog = page.locator(".nv-dialog-layer");
     let steps = 0;
     let exitChecked = false;
+    /** Cuántas veces apareció cada pregunta, para ir probando sus respuestas en orden. */
+    const asked = new Map<string, number>();
 
     while (!(await ending.isVisible())) {
       expect(Date.now() < deadline, `${label} no llegó al cierre (paso: ${await currentStep(page)})`).toBe(true);
 
       if (await dialog.isVisible()) {
+        const choices = dialog.locator(".nv-choice");
+        if (await choices.count()) {
+          const question = (await dialog.locator("p").textContent()) ?? "";
+          const n = asked.get(question) ?? 0;
+          asked.set(question, n + 1);
+          const choice = choices.nth(n % (await choices.count()));
+          if (mobile) await choice.tap();
+          else {
+            await choice.focus();
+            await page.keyboard.press("Enter");
+          }
+          continue;
+        }
         if (mobile) await dialog.tap();
         else await page.keyboard.press("Enter");
         continue;

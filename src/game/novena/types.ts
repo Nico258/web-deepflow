@@ -9,8 +9,17 @@ export type Zone = { x: number; y: number; w: number; h: number };
 
 export type Lighting = "day" | "night" | "glory";
 
-/** Quién dice una línea: el id de un personaje, "player" o "narrator". */
-export type Line = { who: string; text: string };
+/**
+ * Una respuesta para elegir. Al elegirla se marcan o desmarcan sus banderas y, si tiene `next`,
+ * se abre ese diálogo (puede ser el mismo que pregunta, para volver a preguntar).
+ */
+export type Choice = { text: string; set?: Flags; unset?: Flags; next?: string };
+
+/**
+ * Quién dice una línea: el id de un personaje, "player" o "narrator".
+ * `choices` (solo en la última línea de un diálogo) muestra respuestas para elegir.
+ */
+export type Line = { who: string; text: string; choices?: Choice[] };
 
 /**
  * Banderas: nombres que el capítulo marca para recordar lo que ya pasó («toco-casa-1», «tiene-pan»).
@@ -29,7 +38,10 @@ export type Condition = { step?: string | string[]; flags?: string[]; not?: stri
 /** Un caso de lo que dice un personaje al hablarle. `set` y `unset` se aplican al terminar el diálogo. */
 export type TalkCase = { when?: Condition; dialog: string; set?: Flags; unset?: Flags };
 
-export type Action =
+/** Una acción del guion. Con `when`, solo se hace si se cumple la condición (si no, se salta). */
+export type Action = ActionKind & { when?: Condition };
+
+type ActionKind =
   | { type: "say"; dialog: string }
   /** Marca o desmarca una o varias banderas. */
   | { type: "set"; flag: Flags }
