@@ -94,7 +94,7 @@ export function GameView({ info, chapter, startAt, next, onExit, onComplete, onP
     const measure = () => {
       const top = hud.parentElement!.getBoundingClientRect().top;
       const hudBottom = hud.getBoundingClientRect().bottom - top;
-      if (below.querySelector(".nv-objective, .nv-hint, .nv-items")) topSpace.current = below.getBoundingClientRect().bottom - top - hudBottom;
+      if (below.querySelector(".nv-objective, .nv-step-hint, .nv-items")) topSpace.current = below.getBoundingClientRect().bottom - top - hudBottom;
       bus.emit("hudInset", Math.round(hudBottom + topSpace.current + 8));
     };
     measure();
@@ -186,7 +186,7 @@ export function GameView({ info, chapter, startAt, next, onExit, onComplete, onP
           </p>
         )}
         {hintShown && !dialog && (
-          <p className="nv-hint" aria-hidden="true">
+          <p className="nv-step-hint" aria-hidden="true">
             <Lightbulb size={14} weight="fill" /> {hint.text}
           </p>
         )}

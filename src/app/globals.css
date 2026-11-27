@@ -561,8 +561,8 @@ dialog.reto-avatar{max-width:520px}
 .nv-top{position:absolute;top:calc(max(10px,env(safe-area-inset-top)) + 50px);left:12px;right:12px;display:flex;flex-direction:column;align-items:center;gap:8px;pointer-events:none}
 .nv-objective{margin:0;max-width:100%;width:max-content;padding:8px 14px;background:#101a33e6;border:2px solid var(--nv-gold);border-radius:6px;color:var(--nv-cream);font:600 15px/1.3 var(--font-pixel),monospace;text-align:center;pointer-events:none;animation:nv-pop .3s ease-out}
 .nv-objective span{color:var(--nv-gold)}
-.nv-hint{display:flex;align-items:center;gap:6px;margin:-2px 0 0;max-width:100%;width:max-content;padding:6px 12px;background:#fff6dff2;color:#2a1d07;border:2px solid #2a1d07;border-radius:6px;font:500 14px/1.3 var(--font-pixel),monospace;animation:nv-pop .3s ease-out}
-.nv-hint svg{flex-shrink:0;color:#b07a10}
+.nv-step-hint{display:flex;align-items:center;gap:6px;margin:-2px 0 0;max-width:100%;width:max-content;padding:6px 12px;background:#fff6dff2;color:#2a1d07;border:2px solid #2a1d07;border-radius:6px;font:500 14px/1.3 var(--font-pixel),monospace;animation:nv-pop .3s ease-out}
+.nv-step-hint svg{flex-shrink:0;color:#b07a10}
 /* Lo que lleva el jugador: a la derecha, debajo del objetivo; solo informativo */
 .nv-items{align-self:flex-end;display:flex;gap:6px;pointer-events:auto}
 .nv-item{display:grid;place-items:center;width:36px;height:36px;padding:0;background:#101a33e6;border:2px solid var(--nv-gold);border-radius:6px;cursor:pointer;animation:nv-item-in .35s ease-out}
