@@ -102,11 +102,14 @@ Las ovejas huyen del jugador: hay que ponerse detrás de ellas para empujarlas h
 | `gate` | Casillas de la puerta: deben ser `g` en el mapa |
 | `fleeRadius` | A cuántas casillas del jugador se asustan. Recomendado: 3 |
 | `paceMs` | (Opcional) cada cuántos ms decide una oveja si da un paso. Más alto, más lentas. Por defecto 320 |
-| `homing` | (Opcional) de 0 a 1: cuánto tienden a volver al corral, al huir y cuando están tranquilas. Por defecto 0,4 |
-| `helpAfterMs` | (Opcional) pasado este tiempo, las que faltan dejan de huir y vuelven solas, despacio. Por defecto 90 000 (1,5 min); 0 la desactiva |
+| `homing` | (Opcional) de 0 a 1: al huir, cuánto prefieren el lado del corral al principio. Por defecto 0,2 |
+| `helpAfterMs` | (Opcional) desde cuándo empieza a crecer la ayuda. Por defecto 45 000 (45 s); 0 la desactiva |
+| `helpRampMs` | (Opcional) cuánto tarda la ayuda en llegar al máximo. Por defecto 60 000 (1 min) |
 | `helpDialog` | (Opcional) diálogo que se abre una vez cuando empieza la ayuda |
 
-Al huir, una oveja prefiere alejarse en línea recta, evita pegarse a muros y cercas (si no, se desliza por el borde hasta una esquina) y, entre caminos parecidos, elige el lado del corral. La ayuda existe para que nadie se quede trabado: es un juego para acompañar la novena, no para frustrarse.
+Al huir, una oveja prefiere alejarse en línea recta, evita pegarse a muros y cercas (si no, se desliza por el borde hasta una esquina) y, entre caminos parecidos, elige el lado del corral. Tranquila (con el jugador lejos), casi no se mueve y nunca vuelve sola.
+
+La **ayuda** existe para que nadie se quede trabado: es un juego para acompañar la novena, no para frustrarse. Desde `helpAfterMs`, la preferencia por el corral crece poco a poco durante `helpRampMs`; al máximo, una oveja va hacia el corral aunque tenga que pasar cerca del jugador (por ejemplo, para salir de un muro). Solo actúa cuando el jugador se acerca a la oveja.
 
 Para un momento jugable nuevo (cargar el burro, tocar puertas…), primero hay que preguntarse si se arma con estas piezas. Si no, se agrega una meta nueva al motor, como se hizo con `herd`, para que quede disponible para los demás capítulos.
 

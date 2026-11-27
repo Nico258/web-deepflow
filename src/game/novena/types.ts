@@ -70,15 +70,18 @@ export type HerdConfig = {
   /** Cada cuántos milisegundos decide una oveja si da un paso. Más alto, más lentas. Por defecto 320. */
   paceMs?: number;
   /**
-   * De 0 a 1: cuánto prefieren huir hacia el corral cuando tienen dos caminos parecidos.
-   * Con 0 solo huyen del jugador; con 1 casi siempre eligen el lado del corral. Por defecto 0,4.
+   * De 0 a 1: al huir, cuánto prefieren el lado del corral cuando tienen dos caminos parecidos.
+   * Con 0 solo huyen del jugador. Es el valor del principio: la ayuda lo sube con el tiempo. Por defecto 0,2.
    */
   homing?: number;
   /**
-   * Ayuda para que nadie se quede trabado: pasado este tiempo en el paso `herd`, las ovejas que faltan
-   * empiezan a volver solas al corral, despacio. En milisegundos; 0 la desactiva. Por defecto 90000 (1,5 min).
+   * Ayuda para que nadie se quede trabado. Pasado este tiempo en el paso `herd`, la tendencia a huir
+   * hacia el corral empieza a crecer. Solo actúa cuando el jugador se acerca a una oveja: ninguna vuelve
+   * sola. En milisegundos; 0 la desactiva. Por defecto 45000 (45 s).
    */
   helpAfterMs?: number;
+  /** Cuánto tarda la ayuda en llegar al máximo, en milisegundos. Por defecto 60000 (1 min). */
+  helpRampMs?: number;
   /** Diálogo que se abre una vez cuando empieza la ayuda, para contar qué pasa. */
   helpDialog?: string;
 };

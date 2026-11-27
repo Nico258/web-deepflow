@@ -82,6 +82,7 @@ export function validateChapter(chapter: Chapter): ChapterReport {
     if (herd.paceMs !== undefined && herd.paceMs < 50) errors.push("Ovejas: `paceMs` es muy bajo (mínimo 50).");
     if (herd.homing !== undefined && (herd.homing < 0 || herd.homing > 1)) errors.push("Ovejas: `homing` va de 0 a 1.");
     if (herd.helpAfterMs !== undefined && herd.helpAfterMs < 0) errors.push("Ovejas: `helpAfterMs` no puede ser negativo.");
+    if (herd.helpRampMs !== undefined && herd.helpRampMs < 0) errors.push("Ovejas: `helpRampMs` no puede ser negativo.");
     if (herd.helpDialog && !chapter.dialogs[herd.helpDialog]) errors.push(`Ovejas: \`helpDialog\` abre el diálogo «${herd.helpDialog}», que no existe.`);
     herd.sheep.forEach((t, i) => {
       if (!inside(t) || SOLID.has(letter(t))) errors.push(`Oveja ${i + 1}: la casilla ${fmt(t)} no se puede pisar o está fuera del mapa.`);

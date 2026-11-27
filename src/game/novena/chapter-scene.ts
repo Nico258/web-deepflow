@@ -1,7 +1,7 @@
 import * as Phaser from "phaser";
 import type { NovenaBus, ResolvedLine } from "./bus";
 import { DIRS, SOLID, inZone, manhattan, same, toGrid } from "./map";
-import type { Action, Actor, Chapter, Lighting, Step, Tile } from "./types";
+import type { Action, Actor, Chapter, HerdConfig, Lighting, Step, Tile } from "./types";
 
 // Motor de un capítulo. Lee el guion (src/data/novena/capitulos/*) y lo vuelve jugable:
 // dibuja el mapa, mueve al jugador por casillas, recorre los pasos y le pide a React
@@ -14,11 +14,7 @@ export const TILE = 16;
 const STEP_MS = 150;
 const SHEEP_STEP_MS = 220;
 /** Valores por defecto de los campos opcionales de `herd` (ver HerdConfig en types.ts). */
-const HERD_DEFAULTS = { paceMs: 320, homing: 0.4, helpAfterMs: 90_000 };
-/** Con la ayuda activa, probabilidad de que una oveja tranquila dé un paso hacia el corral en cada turno. */
-const HELP_STEP_CHANCE = 0.35;
-/** Sin ayuda, una oveja tranquila da un paso hacia el corral con probabilidad `homing` × esto en cada turno. */
-const CALM_HOME_CHANCE = 0.3;
+const HERD_DEFAULTS = { paceMs: 320, homing: 0.2, helpAfterMs: 45_000, helpRampMs: 60_000 };
 /** Cuánto hay que mantener el dedo (o el clic) para caminar hacia él en vez de ir a un punto. */
 const HOLD_MS = 220;
 
@@ -116,7 +112,8 @@ export class ChapterScene extends Phaser.Scene {
   /** Distancia de cada casilla al corral, caminando como oveja. */
   private penDistance: (t: Tile) => number = () => 0;
   private herdStartedAt = 0;
-  private herdHelping = false;
+  /** Si ya se abrió `helpDialog` en este paso. */
+  private herdHelpAnnounced = false;
   /** El dedo (o el mouse) que se mantiene apretado para caminar hacia él. */
   private hold: { pointer: Phaser.Input.Pointer; since: number } | null = null;
 
@@ -399,7 +396,7 @@ export class ChapterScene extends Phaser.Scene {
     this.showObjective();
     if (step.goal.type === "herd") {
       this.herdStartedAt = this.time.now;
-      this.herdHelping = false;
+      this.herdHelpAnnounced = false;
     }
     if (step.onStart) await this.run(step.onStart);
     const goal = step.goal;
@@ -533,47 +530,50 @@ export class ChapterScene extends Phaser.Scene {
   // - Si el jugador está a `fleeRadius` casillas o menos, huye. Prefiere alejarse en línea recta (así,
   //   empujarla desde atrás la lleva hacia adelante), evita pegarse a muros y cercas (si no, se desliza
   //   por el borde hasta una esquina) y, entre caminos parecidos, elige el lado del corral (`homing`).
-  // - Si está tranquila (el jugador lejos), camina despacio de vuelta al rebaño (`homing`) y a veces
-  //   da un paso al azar. Así, alejarse un poco deja que una oveja salga sola de un rincón.
-  // - Con la ayuda activa (`helpAfterMs`), las que faltan ya no huyen: caminan solas hacia el corral,
-  //   aunque el jugador las siga. Así nadie se queda trabado con una oveja en un rincón.
+  // - Si está tranquila (el jugador lejos), casi no se mueve: a veces da un paso al azar. No vuelve sola.
+  // - Ayuda: desde `helpAfterMs`, la tendencia a ir hacia el corral al huir crece poco a poco durante
+  //   `helpRampMs`. Al final, al acercarse a una oveja, esta va hacia el corral aunque tenga que pasar
+  //   cerca del jugador; así nadie se queda trabado con una oveja en un rincón. Solo actúa al acercarse.
   // - Las que ya están en el corral se quedan adentro.
   private sheepTick() {
     const herd = this.chapter.herd;
     if (!herd || this.busy) return;
     const herding = this.step?.goal.type === "herd";
-    const helpAfter = herd.helpAfterMs ?? HERD_DEFAULTS.helpAfterMs;
-    if (herding && !this.herdHelping && helpAfter > 0 && this.time.now - this.herdStartedAt >= helpAfter) {
-      this.herdHelping = true;
+    const help = herding ? this.herdHelp(herd) : 0;
+    if (help > 0 && !this.herdHelpAnnounced) {
+      this.herdHelpAnnounced = true;
       if (herd.helpDialog) {
         void this.progress(() => this.say(herd.helpDialog!));
         return;
       }
     }
-    const homing = herd.homing ?? HERD_DEFAULTS.homing;
     for (const s of this.sheep) {
       if (s.moving) continue;
       const options = DIRS.map(([dx, dy]): Tile => [s.tile[0] + dx, s.tile[1] + dy]).filter(
         (t) => this.sheepCanGo(t) && (!s.penned || inZone(t, herd.pen)),
       );
       if (!options.length) continue;
-      const homeward = s.penned ? [] : options.filter((t) => this.penDistance(t) < this.penDistance(s.tile));
       let choice: Tile | undefined;
-      if (this.herdHelping && herding && !s.penned) {
-        // Si el jugador (u otra oveja) tapa el camino, lo rodea por un costado.
-        const around = options.filter((t) => this.penDistance(t) === this.penDistance(s.tile));
-        const way = homeward.length ? homeward : around.length ? around : options;
-        if (way.length && Math.random() < HELP_STEP_CHANCE) choice = Phaser.Utils.Array.GetRandom(way);
-      } else if (manhattan(s.tile, this.playerTile) <= herd.fleeRadius) choice = this.fleeChoice(s, options, homing);
-      else if (homeward.length && Math.random() < homing * CALM_HOME_CHANCE) choice = Phaser.Utils.Array.GetRandom(homeward);
-      else if (Math.random() < 0.06) {
-        choice = Phaser.Utils.Array.GetRandom(homeward.length && Math.random() < homing ? homeward : options);
-      }
+      if (manhattan(s.tile, this.playerTile) <= herd.fleeRadius) choice = this.fleeChoice(s, options, herd, help);
+      else if (Math.random() < 0.06) choice = Phaser.Utils.Array.GetRandom(options);
       if (choice) this.moveSheep(s, choice);
     }
   }
 
-  private fleeChoice(s: Sheep, options: Tile[], homing: number): Tile | undefined {
+  /** Cuánta ayuda hay ahora, de 0 (nada) a 1 (toda): crece desde `helpAfterMs` durante `helpRampMs`. */
+  private herdHelp(herd: HerdConfig) {
+    const after = herd.helpAfterMs ?? HERD_DEFAULTS.helpAfterMs;
+    if (after <= 0) return 0;
+    const elapsed = this.time.now - this.herdStartedAt - after;
+    if (elapsed < 0) return 0;
+    const ramp = herd.helpRampMs ?? HERD_DEFAULTS.helpRampMs;
+    return ramp <= 0 ? 1 : Math.min(1, elapsed / ramp);
+  }
+
+  private fleeChoice(s: Sheep, options: Tile[], herd: HerdConfig, help: number): Tile | undefined {
+    // La tendencia a ir hacia el corral empieza en `homing` y llega a 1 con la ayuda completa.
+    const base = herd.homing ?? HERD_DEFAULTS.homing;
+    const homing = base + (1 - base) * help;
     const [px, py] = this.playerTile;
     const d2 = (t: Tile) => (t[0] - px) ** 2 + (t[1] - py) ** 2;
     const now = d2(s.tile);
@@ -582,16 +582,19 @@ export class ChapterScene extends Phaser.Scene {
     const home = this.penDistance(s.tile);
     const score = (t: Tile) => {
       const towardPen = s.penned ? 0 : Math.sign(home - this.penDistance(t));
-      return d2(t) - now - 1.5 * walls(t) + 3 * homing * towardPen;
+      // Con ayuda, ir hacia el corral pesa más que alejarse del jugador.
+      return d2(t) - now - 1.5 * walls(t) + (3 * homing + 4 * help) * towardPen;
     };
     const pick = (tiles: Tile[]) => {
       if (!tiles.length) return undefined;
       const best = Math.max(...tiles.map(score));
       return Phaser.Utils.Array.GetRandom(tiles.filter((t) => score(t) === best));
     };
-    // Nunca hacia el jugador…
+    // Nunca hacia el jugador… salvo que la ayuda ya haya empezado y sea el camino al corral
+    // (así sale, por ejemplo, de un muro con el jugador al frente).
     const away = options.filter((t) => d2(t) > now);
-    if (away.length) return pick(away);
+    const homeward = help > 0 && !s.penned ? options.filter((t) => this.penDistance(t) < home && !away.includes(t)) : [];
+    if (away.length || homeward.length) return pick([...away, ...homeward]);
     // …salvo que esté acorralada y el jugador encima: entonces se escabulle por el lado más abierto.
     return manhattan(s.tile, this.playerTile) <= 1 ? pick(options) : undefined;
   }
