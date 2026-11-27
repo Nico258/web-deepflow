@@ -19,7 +19,7 @@ const chapter: Chapter = {
   map: {
     lighting: "day",
     rows: [
-      "####################",
+      "##########d#########",
       "#..................#",
       "#....T........b....#",
       "#..................#",
@@ -29,6 +29,24 @@ const chapter: Chapter = {
       "#..................#",
       "####################",
     ],
+    // Pisar la puerta (`d`) en [10, 0] lleva a la casa y aparece en [4, 3].
+    exits: [{ at: [10, 0], to: "casa", arrive: [4, 3] }],
+  },
+
+  // Otros mapas, por id. Se entra y se sale por sus `exits`; los personajes dicen en qué mapa
+  // están con `map`. Si el mapa es más chico que la pantalla, se ve centrado.
+  maps: {
+    casa: {
+      lighting: "day",
+      rows: [
+        "##########",
+        "#________#",
+        "#________#",
+        "#________#",
+        "####d#####",
+      ],
+      exits: [{ at: [4, 4], to: "main", arrive: [10, 1] }],
+    },
   },
 
   player: { name: "Personaje", color: 0x3d6fb6, at: [3, 4] },
@@ -54,7 +72,8 @@ const chapter: Chapter = {
       id: "canasta",
       name: "Canasta",
       kind: "object",
-      at: [16, 6],
+      map: "casa",
+      at: [7, 1],
       color: 0xc9a25a,
       talk: [{ dialog: "canasta", set: "tiene-canasta", do: [{ type: "hide", actor: "canasta" }] }],
     },
@@ -68,7 +87,7 @@ const chapter: Chapter = {
     // muestran cuántas van.
     {
       id: "saludar",
-      objective: "Saluda a la vecina y recoge la canasta ({n}/{total})",
+      objective: "Saluda a la vecina y recoge la canasta en la casa ({n}/{total})",
       goal: { type: "flags", all: ["saludo-vecina", "tiene-canasta"] },
     },
     {

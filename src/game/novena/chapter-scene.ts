@@ -1,8 +1,8 @@
 import * as Phaser from "phaser";
 import type { NovenaBus, ResolvedLine } from "./bus";
-import { DIRS, SOLID, inZone, manhattan, same, toGrid } from "./map";
+import { DIRS, MAIN_MAP, SOLID, allMaps, inZone, manhattan, mapOf, same, toGrid } from "./map";
 import { caseSets, choicesOf, currentTalk, flagList, matches } from "./rules";
-import type { Action, Actor, Chapter, Choice, Flags, HerdConfig, Line, Lighting, Step, Tile } from "./types";
+import type { Action, Actor, Chapter, Choice, Exit, Flags, HerdConfig, Line, Lighting, Step, Tile } from "./types";
 
 // Motor de un capítulo. Lee el guion (src/data/novena/capitulos/*) y lo vuelve jugable:
 // dibuja el mapa, mueve al jugador por casillas, recorre los pasos y le pide a React
@@ -23,7 +23,7 @@ const HOLD_MS = 220;
 /** Tras cerrar un diálogo o una ventana, cuánto se ignoran los toques y teclas (el mismo toque no camina). */
 const FREED_MS = 250;
 
-const GROUND: Record<string, number> = { ",": 0xb89c6a, g: 0xb89c6a, _: 0xa9a294, "#": 0x77736c, "~": 0x3f73a6 };
+const GROUND: Record<string, number> = { ",": 0xb89c6a, g: 0xb89c6a, _: 0xa9a294, d: 0x8a6239, "#": 0x77736c, "~": 0x3f73a6 };
 const GRASS = 0x6f9a4f;
 
 const LIGHT: Record<Lighting, { color: number; alpha: number }> = {
@@ -49,7 +49,8 @@ const LABEL_RANGE = 3;
 const center = (t: Tile) => ({ x: t[0] * TILE + TILE / 2, y: t[1] * TILE + TILE / 2 });
 
 type Figure = Phaser.GameObjects.Container;
-type Person = { actor: Actor; tile: Tile; view: Figure; hidden: boolean; bob?: Phaser.Tweens.Tween };
+/** `map`: en qué mapa está. Se ve solo si no está oculto y el jugador está en ese mapa. */
+type Person = { actor: Actor; map: string; tile: Tile; view: Figure; hidden: boolean; bob?: Phaser.Tweens.Tween };
 /** `home`: donde la dejaron (al empezar o tras huir); tranquila, pasta cerca de ahí. */
 type Sheep = { tile: Tile; home: Tile; view: Figure; penned: boolean; moving: boolean };
 
@@ -58,6 +59,8 @@ export type SceneOptions = { chapter: Chapter; bus: NovenaBus; startAt?: string 
 /** Estado visible desde las pruebas y la consola (ver NovenaDebug). */
 export type DebugState = {
   step: string | null;
+  /** En qué mapa está el jugador ("main" es el principal). */
+  map: string;
   goal: Step["goal"]["type"] | null;
   /**
    * Con quién hay que hablar: en `talk`, el de la meta; en `flags`, alguien cuyo diálogo de ahora
@@ -83,15 +86,16 @@ export type NovenaDebug = {
   /**
    * Cumple la meta del paso actual como si se hubiera jugado: `talk` habla con el personaje,
    * `reach` lleva al jugador a la zona, `herd` mete las ovejas al corral y `flags` habla con
-   * quien marca una bandera que falta (o, si nadie, las marca de una vez). Devuelve false si
-   * en ese momento no se puede (hay un diálogo o una escena, o la meta es `auto`).
+   * quien marca una bandera que falta (o, si nadie, las marca de una vez). Si hace falta, primero
+   * pasa al jugador al mapa donde está la persona o la zona. Devuelve false si en ese momento no
+   * se puede (hay un diálogo o una escena, o la meta es `auto`).
    */
   completeStep(): boolean;
   /** Pone al jugador en una casilla, sin animación. */
   teleport(tile: Tile): void;
   /** Posición en pantalla (píxeles CSS, relativa a la ventana) del centro de una casilla. */
   screenPoint(tile: Tile): { x: number; y: number };
-  /** Casilla donde está un personaje. */
+  /** Casilla donde está un personaje, o null si no está en el mapa donde está el jugador. */
   actorTile(id: string): Tile | null;
 };
 
@@ -100,7 +104,12 @@ export class ChapterScene extends Phaser.Scene {
   private bus: NovenaBus;
   private startAt?: string;
 
+  /** El mapa donde está el jugador, y la cuadrícula de cada mapa (la puerta del corral la cambia). */
+  private mapId = MAIN_MAP;
+  private grids = new Map<string, string[][]>();
   private grid: string[][] = [];
+  /** Luz de cada mapa: la de su definición, hasta que una acción `lighting` la cambie. */
+  private lightingOf = new Map<string, Lighting>();
   private ground!: Phaser.GameObjects.Graphics;
   private overlay!: Phaser.GameObjects.Rectangle;
   private glows: Phaser.GameObjects.Image[] = [];
@@ -154,21 +163,21 @@ export class ChapterScene extends Phaser.Scene {
   // ───────── Montaje ─────────
 
   create() {
-    this.grid = toGrid(this.chapter.map.rows);
-    const mapW = (this.grid[0]?.length ?? 0) * TILE;
-    const mapH = this.grid.length * TILE;
+    for (const [id, m] of allMaps(this.chapter)) {
+      this.grids.set(id, toGrid(m.rows));
+      this.lightingOf.set(id, m.lighting);
+    }
+    this.grid = this.grids.get(MAIN_MAP)!;
 
     this.ground = this.add.graphics().setDepth(0);
-    this.drawMap();
 
     for (const actor of this.chapter.actors) {
       // Los ángeles no llevan nombre encima (se presentan en el diálogo), ni los objetos de decoración.
       const kind = actor.floating ? "angel" : actor.kind === "object" ? "object" : "person";
       const label = kind === "person" || (kind === "object" && actor.talk) ? actor.name : undefined;
       const view = this.makeFigure(actor.color, kind, label);
-      const person: Person = { actor, tile: [...actor.at], view, hidden: !!actor.hidden };
+      const person: Person = { actor, map: actor.map ?? MAIN_MAP, tile: [...actor.at], view, hidden: !!actor.hidden };
       this.place(view, actor.at, actor.floating);
-      view.setVisible(!person.hidden);
       if (actor.floating && !person.hidden) this.startBob(person);
       this.people.set(actor.id, person);
     }
@@ -188,28 +197,14 @@ export class ChapterScene extends Phaser.Scene {
     }
     if (this.chapter.herd) this.penDistance = this.measurePenDistance();
 
-    // Luz: una capa de color encima del mapa, y un brillo sobre cada fogata.
-    const light = LIGHT[this.chapter.map.lighting];
-    this.overlay = this.add.rectangle(0, 0, mapW, mapH, light.color, light.alpha).setOrigin(0).setDepth(1000);
-    this.grid.forEach((row, y) =>
-      row.forEach((c, x) => {
-        if (c !== "*") return;
-        const { x: cx, y: cy } = center([x, y]);
-        // Luz suave que se desvanece hacia los bordes; va sobre la capa de noche para iluminar.
-        const glow = this.add.image(cx, cy, this.glowTexture()).setDepth(1001).setTint(0xffa040).setAlpha(0.32);
-        glow.setDisplaySize(TILE * 8, TILE * 8).setBlendMode(Phaser.BlendModes.ADD);
-        const base = glow.scale;
-        this.tweens.add({ targets: glow, alpha: 0.22, scale: base * 0.94, duration: 700, yoyo: true, repeat: -1, ease: "Sine.inOut" });
-        this.glows.push(glow);
-      }),
-    );
-    this.setGlows(this.chapter.map.lighting);
+    // Luz: una capa de color encima del mapa (y un brillo sobre cada fogata, en enterMap).
+    this.overlay = this.add.rectangle(0, 0, TILE, TILE, 0x000000, 0).setOrigin(0).setDepth(1000);
 
     const cam = this.cameras.main;
-    cam.setBounds(0, 0, mapW, mapH);
     cam.setRoundPixels(true);
-    cam.startFollow(this.player, true, 0.2, 0.2);
     this.fitZoom();
+    this.enterMap();
+    cam.startFollow(this.player, true, 0.2, 0.2);
     this.scale.on("resize", this.fitZoom, this);
 
     this.setupInput();
@@ -250,6 +245,81 @@ export class ChapterScene extends Phaser.Scene {
   private fitZoom() {
     const { width, height } = this.scale.gameSize;
     this.cameras.main.setZoom(Math.max(2, Math.floor(Math.min(width, height) / (TILE * 14))));
+    this.fitBounds();
+  }
+
+  /** Límites de la cámara: el mapa; si el mapa es más chico que la pantalla (una casa), queda centrado. */
+  private fitBounds() {
+    const cam = this.cameras.main;
+    const mapW = (this.grid[0]?.length ?? 0) * TILE;
+    const mapH = this.grid.length * TILE;
+    const w = Math.max(mapW, cam.width / cam.zoom);
+    const h = Math.max(mapH, cam.height / cam.zoom);
+    cam.setBounds((mapW - w) / 2, (mapH - h) / 2, w, h);
+  }
+
+  /** Arma lo que depende del mapa actual: suelo, luz, fogatas, cámara y quién se ve. */
+  private enterMap() {
+    this.drawMap();
+    const mode = this.lightingOf.get(this.mapId) ?? "day";
+    const light = LIGHT[mode];
+    this.overlay.setSize(this.grid[0].length * TILE, this.grid.length * TILE).setFillStyle(light.color, light.alpha);
+    for (const g of this.glows) g.destroy();
+    this.glows = [];
+    this.grid.forEach((row, y) =>
+      row.forEach((c, x) => {
+        if (c !== "*") return;
+        const { x: cx, y: cy } = center([x, y]);
+        // Luz suave que se desvanece hacia los bordes; va sobre la capa de noche para iluminar.
+        const glow = this.add.image(cx, cy, this.glowTexture()).setDepth(1001).setTint(0xffa040).setAlpha(0.32);
+        glow.setDisplaySize(TILE * 8, TILE * 8).setBlendMode(Phaser.BlendModes.ADD);
+        const base = glow.scale;
+        this.tweens.add({ targets: glow, alpha: 0.22, scale: base * 0.94, duration: 700, yoyo: true, repeat: -1, ease: "Sine.inOut" });
+        this.glows.push(glow);
+      }),
+    );
+    this.setGlows(mode);
+    this.fitBounds();
+    for (const p of this.people.values()) p.view.setVisible(this.isHere(p)).setAlpha(1);
+    for (const s of this.sheep) s.view.setVisible(this.mapId === MAIN_MAP);
+    this.updateLabels();
+  }
+
+  /** Si una persona se ve ahora: no está oculta y está en el mapa del jugador. */
+  private isHere(p: Person) {
+    return !p.hidden && p.map === this.mapId;
+  }
+
+  /** Cambia de mapa al instante y pone al jugador en `at`. */
+  private switchMap(id: string, at: Tile) {
+    const grid = this.grids.get(id);
+    if (!grid) return console.warn(`[novena] No existe el mapa «${id}»`);
+    this.mapId = id;
+    this.grid = grid;
+    this.teleportPlayer(at);
+    this.enterMap();
+    this.cameras.main.startFollow(this.player, true, 0.2, 0.2);
+  }
+
+  /** Cambia de mapa con un fundido a oscuro. */
+  private async travel(id: string, at: Tile) {
+    const cam = this.cameras.main;
+    cam.fadeOut(220, 11, 16, 32);
+    await this.wait(220);
+    this.switchMap(id, at);
+    cam.fadeIn(220, 11, 16, 32);
+    await this.wait(220);
+  }
+
+  /** La salida que hay en esta casilla del mapa actual, si hay. */
+  private exitAt(t: Tile): Exit | undefined {
+    return mapOf(this.chapter, this.mapId)?.exits?.find((e) => same(e.at, t));
+  }
+
+  /** Si la meta es `reach` y el jugador está en la zona (y en su mapa). */
+  private reachMet() {
+    const goal = this.step?.goal;
+    return goal?.type === "reach" && (goal.map ?? MAIN_MAP) === this.mapId && inZone(this.playerTile, goal.zone);
   }
 
   private setupInput() {
@@ -386,8 +456,16 @@ export class ChapterScene extends Phaser.Scene {
 
   private afterPlayerMove() {
     this.updateLabels();
-    const goal = this.step?.goal;
-    if (goal?.type === "reach" && inZone(this.playerTile, goal.zone)) void this.progress(() => this.finishStep());
+    const exit = this.exitAt(this.playerTile);
+    if (exit && matches(exit.when, this.step?.id, this.flags)) {
+      void this.progress(async () => {
+        await this.travel(exit.to, exit.arrive);
+        if (this.reachMet()) await this.finishStep();
+      });
+      return;
+    }
+    if (exit?.closed) void this.progress(() => this.say(exit.closed!));
+    else if (this.reachMet()) void this.progress(() => this.finishStep());
     else this.checkHerd();
   }
 
@@ -426,7 +504,7 @@ export class ChapterScene extends Phaser.Scene {
     }
     if (step.onStart) await this.run(step.onStart);
     const goal = step.goal;
-    if (goal.type === "auto" || (goal.type === "reach" && inZone(this.playerTile, goal.zone))) return this.finishStep();
+    if (goal.type === "auto" || this.reachMet()) return this.finishStep();
     if (goal.type === "herd" && this.herdComplete()) return this.finishStep();
     if (this.flagsGoalMet()) return this.finishStep();
   }
@@ -497,7 +575,7 @@ export class ChapterScene extends Phaser.Scene {
         for (const p of people) {
           p.hidden = !show;
           if (show) {
-            p.view.setVisible(true).setAlpha(0);
+            p.view.setVisible(this.isHere(p)).setAlpha(0);
             if (p.actor.floating) this.startBob(p);
           }
         }
@@ -516,6 +594,7 @@ export class ChapterScene extends Phaser.Scene {
       }
       case "lighting": {
         const l = LIGHT[a.mode];
+        this.lightingOf.set(this.mapId, a.mode);
         this.overlay.fillColor = l.color;
         this.setGlows(a.mode);
         return this.tweenAsync({ targets: this.overlay, fillAlpha: l.alpha, duration: 900 });
@@ -537,6 +616,8 @@ export class ChapterScene extends Phaser.Scene {
       case "sfx":
         if (this.cache.audio.exists(a.key)) this.sound.play(a.key);
         return;
+      case "travel":
+        return this.travel(a.map, a.at);
     }
   }
 
@@ -582,8 +663,14 @@ export class ChapterScene extends Phaser.Scene {
     // La meta se da por cumplida: las banderas que pide quedan marcadas, y hablar con alguien
     // hace lo mismo que haría su diálogo (banderas y `do`).
     if (goal.type === "flags") this.setFlags(goal.all, true);
+    // Si la meta estaba en otro mapa, el jugador queda allá (en la zona, o al lado de la persona).
+    if (goal.type === "reach" && (goal.map ?? MAIN_MAP) !== this.mapId) {
+      const tile = this.zoneTiles(goal.zone).find((t) => !SOLID.has(this.grids.get(goal.map ?? MAIN_MAP)?.[t[1]]?.[t[0]] ?? "#"));
+      if (tile) this.switchMap(goal.map ?? MAIN_MAP, tile);
+    }
     if (goal.type === "talk") {
       const person = this.people.get(goal.actor);
+      if (person && person.map !== this.mapId) this.goNextTo(person);
       const talk = person && currentTalk(person.actor, step.id, this.flags);
       this.setFlags(talk?.set, true);
       this.setFlags(talk?.unset, false);
@@ -600,14 +687,15 @@ export class ChapterScene extends Phaser.Scene {
       else if (a.type === "show" || a.type === "hide") {
         for (const p of this.peopleIn(a.actor)) {
           p.hidden = a.type === "hide";
-          p.view.setVisible(!p.hidden).setAlpha(1);
+          p.view.setVisible(this.isHere(p)).setAlpha(1);
           if (!p.hidden && p.actor.floating) this.startBob(p);
         }
       } else if (a.type === "lighting") {
         const l = LIGHT[a.mode];
+        this.lightingOf.set(this.mapId, a.mode);
         this.overlay.setFillStyle(l.color, l.alpha);
         this.setGlows(a.mode);
-      }
+      } else if (a.type === "travel") this.switchMap(a.map, a.at);
     }
   }
 
@@ -624,7 +712,7 @@ export class ChapterScene extends Phaser.Scene {
   // - Las que ya están en el corral se quedan adentro.
   private sheepTick() {
     const herd = this.chapter.herd;
-    if (!herd || this.busy) return;
+    if (!herd || this.busy || this.mapId !== MAIN_MAP) return;
     const herding = this.step?.goal.type === "herd";
     const help = herding ? this.herdHelp(herd) : 0;
     if (help > 0 && !this.herdHelpAnnounced) {
@@ -728,7 +816,7 @@ export class ChapterScene extends Phaser.Scene {
   /** Flechas en el borde de la pantalla que apuntan a las ovejas que faltan y no se ven. */
   private updateSheepArrows() {
     if (!this.sheepArrows.length) return;
-    const show = this.step?.goal.type === "herd" && !this.busy;
+    const show = this.step?.goal.type === "herd" && !this.busy && this.mapId === MAIN_MAP;
     const cam = this.cameras.main;
     const view = cam.worldView;
     // Márgenes en píxeles de pantalla, pasados al mundo: arriba se deja lugar a la barra y al objetivo.
@@ -786,16 +874,17 @@ export class ChapterScene extends Phaser.Scene {
     const herd = this.chapter.herd;
     if (!herd || this.busy || this.step?.goal.type !== "herd" || this.gateClosed) return;
     if (!this.sheep.every((s) => s.penned)) return;
-    const playerInside = inZone(this.playerTile, herd.pen) || herd.gate.some((g) => same(g, this.playerTile));
+    const playerInside = this.mapId === MAIN_MAP && (inZone(this.playerTile, herd.pen) || herd.gate.some((g) => same(g, this.playerTile)));
     if (playerInside) return this.bus.emit("objective", "Sal del corral para cerrar la puerta");
     this.closeGate();
     void this.progress(() => this.finishStep());
   }
 
   private closeGate() {
-    for (const [x, y] of this.chapter.herd?.gate ?? []) this.grid[y][x] = "f";
+    const main = this.grids.get(MAIN_MAP)!;
+    for (const [x, y] of this.chapter.herd?.gate ?? []) main[y][x] = "f";
     this.gateClosed = true;
-    this.drawMap();
+    if (this.mapId === MAIN_MAP) this.drawMap();
   }
 
   private penAllSheep() {
@@ -834,6 +923,7 @@ export class ChapterScene extends Phaser.Scene {
         goal: this.step?.goal.type ?? null,
         talkTo: this.talkTarget()?.actor.id ?? null,
         flags: [...this.flags],
+        map: this.mapId,
         busy: this.busy || this.moving || this.justFreed(),
         done: this.done,
         player: [...this.playerTile],
@@ -845,6 +935,7 @@ export class ChapterScene extends Phaser.Scene {
         if (goal.type === "talk" || goal.type === "flags") {
           const person = this.talkTarget();
           if (person) {
+            if (person.map !== this.mapId) this.goNextTo(person);
             void this.talkTo(person);
             return true;
           }
@@ -857,20 +948,23 @@ export class ChapterScene extends Phaser.Scene {
           return true;
         }
         if (goal.type === "reach") {
-          const { x, y, w, h } = goal.zone;
-          for (let tx = x; tx < x + w; tx++)
-            for (let ty = y; ty < y + h; ty++) {
-              if (!this.walkable([tx, ty])) continue;
-              this.teleportPlayer([tx, ty]);
-              this.afterPlayerMove();
-              return true;
-            }
-          return false;
+          const map = goal.map ?? MAIN_MAP;
+          if (map !== this.mapId) {
+            const first = this.zoneTiles(goal.zone)[0];
+            if (!first) return false;
+            this.switchMap(map, first);
+          }
+          const tile = this.zoneTiles(goal.zone).find((t) => this.walkable(t));
+          if (!tile) return false;
+          this.teleportPlayer(tile);
+          this.afterPlayerMove();
+          return true;
         }
         if (goal.type === "herd") {
           const herd = this.chapter.herd;
           if (!herd) return false;
-          // Si el jugador quedó dentro del corral, sale por la puerta antes de cerrarla.
+          // Si el jugador quedó dentro del corral (o en otro mapa), sale por la puerta antes de cerrarla.
+          if (this.mapId !== MAIN_MAP) this.switchMap(MAIN_MAP, this.chapter.player.at);
           if (inZone(this.playerTile, herd.pen) || herd.gate.some((g) => same(g, this.playerTile))) {
             const out = herd.gate
               .flatMap(([gx, gy]) => DIRS.map(([dx, dy]): Tile => [gx + dx, gy + dy]))
@@ -893,9 +987,23 @@ export class ChapterScene extends Phaser.Scene {
       },
       actorTile: (id) => {
         const p = this.people.get(id);
-        return p ? [...p.tile] : null;
+        return p && p.map === this.mapId ? [...p.tile] : null;
       },
     };
+  }
+
+  /** Casillas de una zona, fila por fila. */
+  private zoneTiles({ x, y, w, h }: { x: number; y: number; w: number; h: number }) {
+    const tiles: Tile[] = [];
+    for (let ty = y; ty < y + h; ty++) for (let tx = x; tx < x + w; tx++) tiles.push([tx, ty]);
+    return tiles;
+  }
+
+  /** Lleva al jugador, al instante, al mapa de una persona y a una casilla a su lado. */
+  private goNextTo(person: Person) {
+    this.switchMap(person.map, person.tile);
+    const side = DIRS.map(([dx, dy]): Tile => [person.tile[0] + dx, person.tile[1] + dy]).find((t) => this.walkable(t));
+    if (side) this.teleportPlayer(side);
   }
 
   private teleportPlayer(tile: Tile) {
@@ -913,7 +1021,7 @@ export class ChapterScene extends Phaser.Scene {
 
   private personAt(t: Tile, includeFloating = false) {
     for (const p of this.people.values()) {
-      if (!p.hidden && same(p.tile, t) && (includeFloating || !p.actor.floating)) return p;
+      if (this.isHere(p) && same(p.tile, t) && (includeFloating || !p.actor.floating)) return p;
     }
     return undefined;
   }
@@ -927,11 +1035,11 @@ export class ChapterScene extends Phaser.Scene {
   }
 
   private adjacentPeople() {
-    return [...this.people.values()].filter((p) => !p.hidden && manhattan(p.tile, this.playerTile) === 1);
+    return [...this.people.values()].filter((p) => this.isHere(p) && manhattan(p.tile, this.playerTile) === 1);
   }
 
   private sheepAt(t: Tile) {
-    return this.sheep.some((s) => same(s.tile, t));
+    return this.mapId === MAIN_MAP && this.sheep.some((s) => same(s.tile, t));
   }
 
   /** Casilla que el jugador puede pisar (las ovejas se revisan aparte porque se mueven). */
@@ -1006,6 +1114,11 @@ export class ChapterScene extends Phaser.Scene {
           g.fillStyle(0x6b4a2b).fillRect(px + 6, py + 4, 4, 11);
         }
         if (c === "g") g.lineStyle(1, 0x8a6239, 0.7).strokeRect(px + 0.5, py + 0.5, TILE - 1, TILE - 1);
+        if (c === "d") {
+          g.fillStyle(0x6b4a2b).fillRect(px + 2, py + 1, TILE - 4, TILE - 1);
+          g.fillStyle(0x8a6239).fillRect(px + 4, py + 3, TILE - 8, TILE - 3);
+          g.fillStyle(0xe8c26a).fillRect(px + TILE - 7, py + 9, 2, 2);
+        }
         if (c === "*") {
           g.fillStyle(0x5d5a55).fillCircle(px + 8, py + 9, 6);
           g.fillStyle(0xe8862a).fillCircle(px + 8, py + 8, 4);

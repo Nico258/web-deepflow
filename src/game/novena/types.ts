@@ -57,12 +57,15 @@ type ActionKind =
   | { type: "pan"; to: Tile; ms?: number }
   | { type: "follow" }
   | { type: "wait"; ms: number }
-  | { type: "sfx"; key: string };
+  | { type: "sfx"; key: string }
+  /** Lleva al jugador a otro mapa del capítulo (o a otra casilla del mismo), con un fundido. */
+  | { type: "travel"; map: string; at: Tile };
 
 export type Goal =
   | { type: "auto" }
   | { type: "talk"; actor: string }
-  | { type: "reach"; zone: Zone }
+  /** `map`: en qué mapa está la zona (por defecto, el principal). */
+  | { type: "reach"; zone: Zone; map?: string }
   | { type: "herd" }
   /** Se cumple cuando están marcadas todas estas banderas, en cualquier orden. */
   | { type: "flags"; all: string[] };
@@ -79,11 +82,22 @@ export type Step = {
   onDone?: Action[];
 };
 
+/**
+ * Salida de un mapa: al pisar `at`, el jugador pasa al mapa `to` y aparece en `arrive`.
+ * Con `when`, solo se puede pasar si se cumple; si no, se abre `closed` (si hay).
+ */
+export type Exit = { at: Tile; to: string; arrive: Tile; when?: Condition; closed?: string };
+
+/** Un mapa en texto (spec 07 §4), con su luz y sus salidas a otros mapas. */
+export type GameMap = { rows: string[]; lighting: Lighting; exits?: Exit[] };
+
 export type Actor = {
   id: string;
   /** Se ve en los diálogos y encima del personaje cuando el jugador está a 3 casillas o menos. */
   name: string;
   at: Tile;
+  /** En qué mapa está (por defecto, el principal). */
+  map?: string;
   /** Color del cuadro mientras no haya sprite. */
   color: number;
   /**
@@ -139,7 +153,10 @@ export type HerdConfig = {
 };
 
 export type Chapter = {
-  map: { rows: string[]; lighting: Lighting };
+  /** El mapa principal, donde empieza el jugador (su id es "main"). Las ovejas van aquí. */
+  map: GameMap;
+  /** Otros mapas (el interior de una casa, otra parte del camino…), por id. Se pasa por sus `exits`. */
+  maps?: Record<string, GameMap>;
   player: { name: string; color: number; at: Tile };
   actors: Actor[];
   dialogs: Record<string, Line[]>;

@@ -1,10 +1,19 @@
 // Leyenda de los mapas en texto (spec 07 §4). La usan el motor y el validador;
 // no importa Phaser para que el validador funcione también fuera del navegador.
 
-import type { Tile, Zone } from "./types";
+import type { Chapter, GameMap, Tile, Zone } from "./types";
 
 /** Todas las letras válidas de un mapa. */
-export const LETTERS = new Set([".", ",", "_", "g", "#", "T", "b", "f", "~", "*"]);
+export const LETTERS = new Set([".", ",", "_", "g", "d", "#", "T", "b", "f", "~", "*"]);
+
+/** Id del mapa principal (`chapter.map`). */
+export const MAIN_MAP = "main";
+
+/** Un mapa del capítulo por su id: "main" es `chapter.map`; los demás están en `chapter.maps`. */
+export const mapOf = (chapter: Chapter, id: string): GameMap | undefined => (id === MAIN_MAP ? chapter.map : chapter.maps?.[id]);
+
+/** Todos los mapas del capítulo, empezando por el principal. */
+export const allMaps = (chapter: Chapter): [string, GameMap][] => [[MAIN_MAP, chapter.map], ...Object.entries(chapter.maps ?? {})];
 
 /** Letras que no se pueden pisar. */
 export const SOLID = new Set(["#", "T", "b", "f", "~", "*"]);

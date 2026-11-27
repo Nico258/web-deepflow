@@ -3,7 +3,7 @@
 // una meta imposible…). Se corre en desarrollo al abrir un capítulo y en `pnpm test:novena`.
 // Ver docs/specs/07-novena-interactiva.md §3.
 
-import { DIRS, LETTERS, SOLID, inZone, same, toGrid } from "./map";
+import { DIRS, LETTERS, MAIN_MAP, SOLID, allMaps, inZone, mapOf, same, toGrid } from "./map";
 import { caseSets, dialogChain, flagList, talkCases } from "./rules";
 import type { Action, Chapter, Condition, Tile, Zone } from "./types";
 
@@ -19,22 +19,27 @@ const RESERVED = new Set(["player", "narrator"]);
 export function validateChapter(chapter: Chapter): ChapterReport {
   const errors: string[] = [];
   const warnings: string[] = [];
-  const grid = toGrid(chapter.map.rows);
-  const height = grid.length;
-  const width = grid[0]?.length ?? 0;
-
+  const grids = new Map(allMaps(chapter).map(([id, m]) => [id, toGrid(m.rows)]));
   const fmt = (t: Tile) => `[${t[0]}, ${t[1]}]`;
-  const inside = (t: Tile) => t[0] >= 0 && t[1] >= 0 && t[0] < width && t[1] < height;
-  const letter = (t: Tile) => (inside(t) ? grid[t[1]][t[0]] : "#");
-  const zoneInside = (z: Zone) => z.w > 0 && z.h > 0 && inside([z.x, z.y]) && inside([z.x + z.w - 1, z.y + z.h - 1]);
+  /** Cómo se nombra un mapa en los mensajes. */
+  const mapLabel = (map: string) => (map === MAIN_MAP ? "el mapa" : `el mapa «${map}»`);
+  const inside = (t: Tile, map = MAIN_MAP) => {
+    const g = grids.get(map);
+    return !!g && t[0] >= 0 && t[1] >= 0 && t[1] < g.length && t[0] < (g[0]?.length ?? 0);
+  };
+  const letter = (t: Tile, map = MAIN_MAP) => (inside(t, map) ? grids.get(map)![t[1]][t[0]] : "#");
+  const zoneInside = (z: Zone, map = MAIN_MAP) => z.w > 0 && z.h > 0 && inside([z.x, z.y], map) && inside([z.x + z.w - 1, z.y + z.h - 1], map);
 
-  // ───────── Mapa ─────────
-  if (!height || !width) errors.push("El mapa está vacío.");
-  chapter.map.rows.forEach((row, y) =>
-    [...row].forEach((c, x) => {
-      if (!LETTERS.has(c)) errors.push(`Mapa: letra desconocida «${c}» en ${fmt([x, y])}. Leyenda en la spec 07 §4.`);
-    }),
-  );
+  // ───────── Mapas ─────────
+  for (const [id, m] of allMaps(chapter)) {
+    const name = id === MAIN_MAP ? "Mapa" : `Mapa «${id}»`;
+    if (!m.rows.length || !m.rows.some((r) => r.length)) errors.push(`${name}: está vacío.`);
+    m.rows.forEach((row, y) =>
+      [...row].forEach((c, x) => {
+        if (!LETTERS.has(c)) errors.push(`${name}: letra desconocida «${c}» en ${fmt([x, y])}. Leyenda en la spec 07 §4.`);
+      }),
+    );
+  }
 
   // ───────── Personajes ─────────
   const actors = new Map(chapter.actors.map((a) => [a.id, a]));
@@ -57,9 +62,11 @@ export function validateChapter(chapter: Chapter): ChapterReport {
     if (seenActors.has(a.id)) errors.push(`${where}: el id está repetido.`);
     seenActors.add(a.id);
     if (RESERVED.has(a.id)) errors.push(`${where}: «${a.id}» está reservado; usa otro id.`);
-    if (!inside(a.at)) errors.push(`${where}: la casilla ${fmt(a.at)} está fuera del mapa.`);
-    else if (!a.floating && SOLID.has(letter(a.at))) errors.push(`${where}: está sobre una casilla que no se puede pisar (${fmt(a.at)}, «${letter(a.at)}»).`);
-    if (!a.floating && same(a.at, chapter.player.at)) errors.push(`${where}: está en la misma casilla que el jugador.`);
+    const am = a.map ?? MAIN_MAP;
+    if (!grids.has(am)) errors.push(`${where}: está en el mapa «${am}», que no existe.`);
+    else if (!inside(a.at, am)) errors.push(`${where}: la casilla ${fmt(a.at)} está fuera de ${mapLabel(am)}.`);
+    else if (!a.floating && SOLID.has(letter(a.at, am))) errors.push(`${where}: está sobre una casilla que no se puede pisar (${fmt(a.at)}, «${letter(a.at, am)}»).`);
+    if (!a.floating && am === MAIN_MAP && same(a.at, chapter.player.at)) errors.push(`${where}: está en la misma casilla que el jugador.`);
     if (Array.isArray(a.talk)) {
       const cases = a.talk;
       cases.forEach((c, i) => {
@@ -78,7 +85,7 @@ export function validateChapter(chapter: Chapter): ChapterReport {
   const solidActors = chapter.actors.filter((a) => !a.floating);
   solidActors.forEach((a, i) =>
     solidActors.slice(i + 1).forEach((b) => {
-      if (same(a.at, b.at)) errors.push(`Personajes «${a.id}» y «${b.id}»: están en la misma casilla ${fmt(a.at)}.`);
+      if ((a.map ?? MAIN_MAP) === (b.map ?? MAIN_MAP) && same(a.at, b.at)) errors.push(`Personajes «${a.id}» y «${b.id}»: están en la misma casilla ${fmt(a.at)}.`);
     }),
   );
 
@@ -104,6 +111,24 @@ export function validateChapter(chapter: Chapter): ChapterReport {
       });
     });
   }
+
+  // ───────── Salidas entre mapas ─────────
+  const exitDialogs: string[] = [];
+  for (const [id, m] of allMaps(chapter))
+    (m.exits ?? []).forEach((e, i) => {
+      const where = `${id === MAIN_MAP ? "Mapa" : `Mapa «${id}»`}, salida ${i + 1}`;
+      if (!inside(e.at, id) || SOLID.has(letter(e.at, id))) errors.push(`${where}: la casilla ${fmt(e.at)} no se puede pisar o está fuera del mapa.`);
+      if (!grids.has(e.to)) errors.push(`${where}: lleva al mapa «${e.to}», que no existe.`);
+      else if (!inside(e.arrive, e.to) || SOLID.has(letter(e.arrive, e.to)))
+        errors.push(`${where}: \`arrive\` ${fmt(e.arrive)} no se puede pisar o está fuera de ${mapLabel(e.to)}.`);
+      else if (mapOf(chapter, e.to)?.exits?.some((x) => same(x.at, e.arrive)))
+        warnings.push(`${where}: se llega justo sobre otra salida; al moverse se puede volver sin querer. Mejor una casilla al lado.`);
+      checkWhen(e.when, where);
+      if (e.closed) {
+        exitDialogs.push(e.closed);
+        if (!chapter.dialogs[e.closed]) errors.push(`${where}: \`closed\` abre el diálogo «${e.closed}», que no existe.`);
+      }
+    });
 
   // ───────── Ovejas ─────────
   const herd = chapter.herd;
@@ -137,32 +162,39 @@ export function validateChapter(chapter: Chapter): ChapterReport {
   /** Banderas que ya están marcadas con seguridad al llegar a cada paso (por acciones, no por diálogos). */
   const flagsNow = new Set<string>();
   if (herd?.helpDialog) usedDialogs.add(herd.helpDialog);
+  for (const d of exitDialogs) usedDialogs.add(d);
+  /** Dónde está el jugador al llegar a cada paso: cambia con `travel` y al cumplir una meta `reach`. */
+  let playerAt: { map: string; tile: Tile } = { map: MAIN_MAP, tile: chapter.player.at };
 
-  const blocked = (t: Tile) =>
-    SOLID.has(letter(t)) ||
-    (gateClosed && herd?.gate.some((g) => same(g, t))) ||
-    chapter.actors.some((a) => !a.floating && !hidden.has(a.id) && same(a.at, t));
+  const blocked = (t: Tile, map: string) =>
+    SOLID.has(letter(t, map)) ||
+    (map === MAIN_MAP && gateClosed && herd?.gate.some((g) => same(g, t))) ||
+    chapter.actors.some((a) => !a.floating && !hidden.has(a.id) && (a.map ?? MAIN_MAP) === map && same(a.at, t));
 
-  /** Casillas a las que llega el jugador desde donde empieza (las ovejas se apartan). */
+  /**
+   * Casillas a las que llega el jugador desde donde está (las ovejas se apartan), pasando por las
+   * salidas entre mapas (aunque tengan `when`: se supone que en algún momento se abren).
+   */
   const reachable = () => {
-    const key = (t: Tile) => t[1] * width + t[0];
-    const seen = new Set<number>();
-    const queue: Tile[] = [];
-    if (inside(chapter.player.at)) {
-      seen.add(key(chapter.player.at));
-      queue.push(chapter.player.at);
-    }
+    const key = (map: string, t: Tile) => `${map}:${t[0]},${t[1]}`;
+    const seen = new Set<string>();
+    const queue: { map: string; tile: Tile }[] = [];
+    const visit = (map: string, t: Tile) => {
+      if (!inside(t, map) || seen.has(key(map, t)) || blocked(t, map)) return;
+      seen.add(key(map, t));
+      queue.push({ map, tile: t });
+    };
+    visit(playerAt.map, playerAt.tile);
     while (queue.length) {
-      const cur = queue.shift()!;
-      for (const [dx, dy] of DIRS) {
-        const n: Tile = [cur[0] + dx, cur[1] + dy];
-        if (!inside(n) || seen.has(key(n)) || blocked(n)) continue;
-        seen.add(key(n));
-        queue.push(n);
-      }
+      const { map, tile } = queue.shift()!;
+      for (const [dx, dy] of DIRS) visit(map, [tile[0] + dx, tile[1] + dy]);
+      for (const e of mapOf(chapter, map)?.exits ?? []) if (same(e.at, tile) && grids.has(e.to)) visit(e.to, e.arrive);
     }
-    return (t: Tile) => seen.has(key(t));
+    return (t: Tile, map = MAIN_MAP) => seen.has(key(map, t));
   };
+  /** Si se puede llegar al lado de un personaje. */
+  const besideReachable = (a: Chapter["actors"][number], canReach: ReturnType<typeof reachable>) =>
+    DIRS.some(([dx, dy]) => canReach([a.at[0] + dx, a.at[1] + dy], a.map ?? MAIN_MAP));
 
   /**
    * Revisa acciones. Con `simulate` (las de los pasos, que pasan en orden) además lleva la cuenta
@@ -197,7 +229,13 @@ export function validateChapter(chapter: Chapter): ChapterReport {
           }
           break;
         case "pan":
-          if (!inside(a.to)) errors.push(`${where}: \`pan\` va a ${fmt(a.to)}, fuera del mapa.`);
+          if (simulate && !inside(a.to, playerAt.map)) errors.push(`${where}: \`pan\` va a ${fmt(a.to)}, fuera de ${mapLabel(playerAt.map)}.`);
+          break;
+        case "travel":
+          if (!grids.has(a.map)) errors.push(`${where}: \`travel\` va al mapa «${a.map}», que no existe.`);
+          else if (!inside(a.at, a.map) || SOLID.has(letter(a.at, a.map)))
+            errors.push(`${where}: \`travel\` lleva a ${fmt(a.at)}, que no se puede pisar o está fuera de ${mapLabel(a.map)}.`);
+          else if (simulate && !a.when) playerAt = { map: a.map, tile: a.at };
           break;
         case "wait":
           if (a.ms < 0) errors.push(`${where}: \`wait\` tiene un tiempo negativo.`);
@@ -222,18 +260,19 @@ export function validateChapter(chapter: Chapter): ChapterReport {
         if (hidden.has(actor.id)) errors.push(`${where}: hay que hablar con «${actor.id}», pero está oculto en ese momento.`);
         if (!talkCases(actor).some((c) => stepAllows(c.when, step.id)))
           errors.push(`${where}: «${actor.id}» no tiene diálogo para este paso (ni \`default\`), así que no se puede cumplir.`);
-        const canReach = reachable();
-        if (!DIRS.some(([dx, dy]) => canReach([actor.at[0] + dx, actor.at[1] + dy])))
-          errors.push(`${where}: no hay forma de llegar al lado de «${actor.id}».`);
+        if (!besideReachable(actor, reachable())) errors.push(`${where}: no hay forma de llegar al lado de «${actor.id}».`);
       }
     } else if (goal.type === "reach") {
-      if (!zoneInside(goal.zone)) errors.push(`${where}: la zona se sale del mapa.`);
+      const map = goal.map ?? MAIN_MAP;
+      if (!grids.has(map)) errors.push(`${where}: la zona está en el mapa «${map}», que no existe.`);
+      else if (!zoneInside(goal.zone, map)) errors.push(`${where}: la zona se sale de ${mapLabel(map)}.`);
       else {
         const canReach = reachable();
-        let ok = false;
-        for (let x = goal.zone.x; x < goal.zone.x + goal.zone.w && !ok; x++)
-          for (let y = goal.zone.y; y < goal.zone.y + goal.zone.h && !ok; y++) ok = canReach([x, y]);
-        if (!ok) errors.push(`${where}: ninguna casilla de la zona se puede alcanzar.`);
+        let found: Tile | undefined;
+        for (let x = goal.zone.x; x < goal.zone.x + goal.zone.w && !found; x++)
+          for (let y = goal.zone.y; y < goal.zone.y + goal.zone.h && !found; y++) if (canReach([x, y], map)) found = [x, y];
+        if (!found) errors.push(`${where}: ninguna casilla de la zona se puede alcanzar.`);
+        else playerAt = { map, tile: found };
       }
     } else if (goal.type === "herd") {
       gateClosed = true;
@@ -249,10 +288,10 @@ export function validateChapter(chapter: Chapter): ChapterReport {
         const someone = chapter.actors.some(
           (a) =>
             !hidden.has(a.id) &&
-            DIRS.some(([dx, dy]) => canReach([a.at[0] + dx, a.at[1] + dy])) &&
+            besideReachable(a, canReach) &&
             talkCases(a).some((c) => stepAllows(c.when, step.id) && caseSets(chapter.dialogs, c).includes(f)),
         );
-        if (!someone) errors.push(`${where}: la meta pide la bandera «${f}», pero en este paso nadie la marca (ni al hablarle ni con una respuesta).`);
+        if (!someone) errors.push(`${where}: la meta pide la bandera «${f}», pero en este paso nadie a quien se pueda llegar la marca (ni al hablarle ni con una respuesta).`);
       }
       goal.all.forEach((f) => flagsNow.add(f));
     }

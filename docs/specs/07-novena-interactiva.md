@@ -70,7 +70,8 @@ Un capítulo tiene:
 
 | Parte | Qué es |
 |---|---|
-| `map` | El mapa como filas de texto (§4) y si es de día o de noche |
+| `map` | El mapa principal como filas de texto (§4), si es de día o de noche y sus salidas |
+| `maps` | (Opcional) otros mapas: el interior de una casa, otra parte del camino (ver «Varios mapas») |
 | `player` | Nombre, color y casilla de inicio del personaje que se maneja |
 | `actors` | Las demás personas (y ángeles, animales que hablan…) y los objetos: casilla, color, si empiezan ocultos y qué dicen en cada paso |
 | `dialogs` | Todas las conversaciones, cada una como una lista de líneas `{ who, text }` |
@@ -84,7 +85,7 @@ Un capítulo tiene:
 |---|---|
 | `auto` | Apenas terminan sus acciones de inicio (para introducciones) |
 | `talk` | Se habla con cierto personaje |
-| `reach` | El jugador llega a cierta zona del mapa |
+| `reach` | El jugador llega a cierta zona (`zone`) del mapa; `map` dice de cuál, si no es el principal |
 | `herd` | Todas las ovejas están en el corral y la puerta se cerró |
 | `flags` | Están marcadas todas las banderas de `all`, en cualquier orden (ver «Banderas») |
 
@@ -92,7 +93,7 @@ En `herd` y `flags`, el `objective` puede llevar `{n}` y `{total}` para mostrar 
 
 ### Acciones (en `onStart` y `onDone`)
 
-`say` (abre un diálogo), `show` / `hide` (aparece o desaparece un personaje), `flash` (destello de luz), `lighting` (cambia la luz: `day`, `night`, `glory`), `pan` / `follow` (mueve la cámara a un punto y vuelve al jugador), `wait` (pausa), `sfx` (efecto de sonido) y `set` / `unset` (marca o desmarca banderas).
+`say` (abre un diálogo), `show` / `hide` (aparece o desaparece un personaje), `flash` (destello de luz), `lighting` (cambia la luz: `day`, `night`, `glory`), `pan` / `follow` (mueve la cámara a un punto y vuelve al jugador), `wait` (pausa), `sfx` (efecto de sonido), `set` / `unset` (marca o desmarca banderas) y `travel` (lleva al jugador a otro mapa o casilla, con un fundido: `{ type: "travel", map: "casa", at: [4, 3] }`).
 
 Cualquier acción puede llevar `when` (la misma condición de «Banderas», más abajo): solo se hace si se cumple. Por ejemplo, `{ type: "say", dialog: "nos-vemos", when: { flags: ["va-a-la-fiesta"] } }`.
 
@@ -123,6 +124,29 @@ Ejemplo, tocar puertas en Belén (capítulo 7): cada posadero dice que no hay lu
 { id: "puertas", objective: "Busca dónde pasar la noche ({n}/{total})",
   goal: { type: "flags", all: ["toco-casa-1", "toco-casa-2", "toco-casa-3"] } },
 ```
+
+### Varios mapas
+
+Además del mapa principal (`map`, cuyo id es `"main"`), un capítulo puede tener otros en `maps`, cada uno con sus filas, su luz y sus salidas. Una **salida** (`exits`) es una casilla: al pisarla, el jugador pasa a otro mapa con un fundido.
+
+| Campo de la salida | Qué es |
+|---|---|
+| `at` | La casilla que se pisa. Lo normal es una puerta (`d`) o el borde del camino |
+| `to` | El id del mapa al que lleva (`"main"` para volver al principal) |
+| `arrive` | Dónde aparece el jugador en ese mapa. Mejor **al lado** de la salida de vuelta, no encima |
+| `when` | (Opcional) solo se puede pasar si se cumple (por ejemplo, después de hablar con alguien) |
+| `closed` | (Opcional) diálogo que se abre al pisarla mientras `when` no se cumple («La puerta está cerrada») |
+
+Cada personaje dice en qué mapa está con `map` (por defecto, el principal) y solo se ve cuando el jugador está ahí. Una meta `reach` en otro mapa lleva `map`. Las ovejas van siempre en el mapa principal. Un mapa más chico que la pantalla, como una casa, se ve centrado. `_plantilla.ts` trae una casa con su puerta.
+
+```ts
+map: { lighting: "day", rows: [/* … */], exits: [{ at: [10, 0], to: "casa", arrive: [4, 3] }] },
+maps: {
+  casa: { lighting: "day", rows: [/* … */], exits: [{ at: [4, 4], to: "main", arrive: [10, 1] }] },
+},
+```
+
+El validador sigue las salidas para saber a qué se puede llegar, y avisa si una lleva a un mapa que no existe o a una casilla que no se puede pisar.
 
 ### Objetos
 
@@ -190,12 +214,12 @@ Para un momento jugable nuevo (cargar el burro, tocar puertas…), primero hay q
 
 > **Recomendado:** antes de subir cualquier cambio a un capítulo, al motor (`src/game/novena/`) o a la interfaz de la novena (`src/components/novena/`), corre `pnpm test:novena` y revisa que pase. No corre solo: ni `pnpm build` ni GitHub lo ejecutan, así que depende de quien hace el cambio (persona o agente). Si alguna prueba falla, el mensaje dice en qué capítulo y en qué paso.
 
-- **Empezar a medias:** en desarrollo (`pnpm dev`), `/novena?cap=8&paso=volver` abre el capítulo 8 directamente en ese paso. Los pasos anteriores se dan por hechos sin diálogos (las ovejas aparecen en el corral, los personajes ya mostrados aparecen, y quedan marcadas las banderas de sus acciones, de sus metas `flags` y de los diálogos de sus metas `talk`). `/novena?cap=plantilla` juega `_plantilla.ts` (sirve para probar el motor sin tocar un capítulo; no se guarda como completada). En producción no funciona.
+- **Empezar a medias:** en desarrollo (`pnpm dev`), `/novena?cap=8&paso=volver` abre el capítulo 8 directamente en ese paso. Los pasos anteriores se dan por hechos sin diálogos (las ovejas aparecen en el corral, los personajes ya mostrados aparecen, quedan marcadas las banderas de sus acciones, de sus metas `flags` y de los diálogos de sus metas `talk`, y si la última meta era en otro mapa, el jugador empieza allá). `/novena?cap=plantilla` juega `_plantilla.ts` (sirve para probar el motor sin tocar un capítulo; no se guarda como completada). En producción no funciona.
 - **Validador** (`src/game/novena/validate.ts`): revisa el guion sin jugarlo. Encuentra lo que rompe el capítulo o lo deja trabado: un diálogo o personaje que no existe, una letra desconocida en el mapa, alguien parado sobre un árbol, hablar con alguien que está oculto o que no tiene diálogo para ese paso, una zona a la que no se puede llegar… También avisa de descuidos, como un diálogo que nadie usa o un paso sin objetivo. En desarrollo corre solo al abrir un capítulo y escribe en la consola del navegador.
 - **Pruebas automáticas** (`pnpm test:novena`, en `tests/novena/`): para **cada capítulo que tenga `load`** en `chapters.ts`, corren el validador y recorren el capítulo de punta a punta en escritorio y en celular (390 × 780, táctil). No se juega de verdad: los diálogos se cierran al instante, a quien hay que hablarle se le toca de verdad (en `flags`, a quien marca una bandera que falta, al hablarle o con una respuesta), las respuestas se van probando en orden (si una vuelve a preguntar, la siguiente vez elige otra) y las demás metas se cumplen de una vez (llegar a la zona, meter las ovejas al corral). Pasan si aparece el cierre con el versículo, se guarda el capítulo y no hay errores en la consola. Tardan unos 15 segundos por capítulo. **Al agregar un capítulo no hay que escribir pruebas nuevas.**
   - La primera vez hay que instalar un navegador para las pruebas: `pnpm exec playwright install chromium`. Si se prefiere usar uno ya instalado, sin descargar nada: `PW_CHANNEL=msedge pnpm test:novena` (Edge) o `PW_CHANNEL=chrome`.
   - Si ya hay un `pnpm dev` abierto en el puerto 3000, las pruebas lo usan; si no, lo abren solas.
-- **Consola:** en desarrollo, `window.__novena` tiene herramientas de depuración: `state()` (paso actual, meta, posición, banderas marcadas), `completeStep()` (cumple la meta actual), `teleport([x, y])`, `actorTile(id)` y `scene` (la escena de Phaser). Las pruebas usan solo estas funciones; si el motor cambia, se ajustan ahí (`NovenaDebug` en `chapter-scene.ts`).
+- **Consola:** en desarrollo, `window.__novena` tiene herramientas de depuración: `state()` (paso actual, meta, mapa, posición, banderas marcadas), `completeStep()` (cumple la meta actual; si hace falta, primero pasa al jugador al mapa de la persona o de la zona), `teleport([x, y])`, `actorTile(id)` y `scene` (la escena de Phaser). Las pruebas usan solo estas funciones; si el motor cambia, se ajustan ahí (`NovenaDebug` en `chapter-scene.ts`).
 
 ### Escribir un capítulo nuevo (el estándar)
 
@@ -214,7 +238,7 @@ Así se arman los capítulos 1 a 7, 9 y ★ mientras el capítulo 8 se sigue pul
 - Un orden que funciona: un paso `auto` de introducción (dónde estamos, quién soy, qué pasa), 3 o 4 pasos con metas, **un momento especial** y el cierre.
 - Cada paso con meta tiene un `objective` corto en imperativo («Habla con Rubén», «Lleva las ovejas al corral»). Nadie debería quedarse sin saber qué hacer.
 - El mapa, pequeño: lo justo para el capítulo (el del 8 es de 40 × 26 casillas). Mejor pocos lugares con algo que hacer que mucho mapa vacío.
-- Un mapa por capítulo y personajes quietos, por ahora (ver «Lo que todavía no existe»).
+- Personajes quietos, por ahora (ver «Lo que todavía no existe»).
 
 **Diálogos**
 
@@ -233,7 +257,6 @@ Así se arman los capítulos 1 a 7, 9 y ★ mientras el capítulo 8 se sigue pul
 Está en el plan (§7) y llegará sin romper los capítulos ya escritos, porque son campos opcionales nuevos. Mientras tanto, se arma el capítulo en línea recta con lo que hay:
 
 - Personajes que caminan solos o que acompañan al jugador.
-- Varios mapas en un capítulo (salir de una casa a la calle).
 - Música por momento y acercar la cámara.
 
 ## 4. Mapas en texto (prototipo)
@@ -246,6 +269,7 @@ Cada letra es una casilla de 16 × 16 px:
 | `,` | Camino de tierra | Sí |
 | `_` | Suelo de piedra o de casa | Sí |
 | `g` | Puerta del corral (abierta) | Sí, hasta que se cierra |
+| `d` | Puerta de una casa (para las salidas entre mapas) | Sí |
 | `#` | Roca o muro | No |
 | `T` | Árbol | No |
 | `b` | Arbusto | No |
