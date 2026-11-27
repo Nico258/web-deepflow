@@ -59,7 +59,18 @@ type ActionKind =
   | { type: "wait"; ms: number }
   | { type: "sfx"; key: string }
   /** Lleva al jugador a otro mapa del capítulo (o a otra casilla del mismo), con un fundido. */
-  | { type: "travel"; map: string; at: Tile };
+  | { type: "travel"; map: string; at: Tile }
+  /**
+   * Hace caminar a un personaje (o a "player") hasta una casilla de su mapa, y espera a que llegue.
+   * `ms`: cuánto tarda cada paso (por defecto 220). Los que flotan van en línea recta.
+   */
+  | { type: "move"; actor: string; to: Tile; ms?: number }
+  /** El personaje empieza a acompañar al jugador: lo sigue detrás, también a otros mapas. */
+  | { type: "join"; actor: string }
+  /** El personaje deja de acompañar y se queda donde está. */
+  | { type: "leave"; actor: string }
+  /** Acerca (más de 1) o aleja (menos de 1) la cámara respecto de lo normal; 1 la deja como estaba. */
+  | { type: "zoom"; to: number; ms?: number };
 
 export type Goal =
   | { type: "auto" }

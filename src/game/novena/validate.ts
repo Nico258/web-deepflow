@@ -163,13 +163,19 @@ export function validateChapter(chapter: Chapter): ChapterReport {
   const flagsNow = new Set<string>();
   if (herd?.helpDialog) usedDialogs.add(herd.helpDialog);
   for (const d of exitDialogs) usedDialogs.add(d);
-  /** Dónde está el jugador al llegar a cada paso: cambia con `travel` y al cumplir una meta `reach`. */
+  /** Dónde está el jugador al llegar a cada paso: cambia con `travel`, `move` y al cumplir una meta `reach`. */
   let playerAt: { map: string; tile: Tile } = { map: MAIN_MAP, tile: chapter.player.at };
+  /** Dónde está cada personaje (cambia con `move`) y quiénes acompañan al jugador (`join`). */
+  const pos = new Map(chapter.actors.map((a) => [a.id, { map: a.map ?? MAIN_MAP, tile: a.at }]));
+  const party = new Set<string>();
 
   const blocked = (t: Tile, map: string) =>
     SOLID.has(letter(t, map)) ||
     (map === MAIN_MAP && gateClosed && herd?.gate.some((g) => same(g, t))) ||
-    chapter.actors.some((a) => !a.floating && !hidden.has(a.id) && (a.map ?? MAIN_MAP) === map && same(a.at, t));
+    chapter.actors.some((a) => {
+      const at = pos.get(a.id)!;
+      return !a.floating && !hidden.has(a.id) && !party.has(a.id) && at.map === map && same(at.tile, t);
+    });
 
   /**
    * Casillas a las que llega el jugador desde donde está (las ovejas se apartan), pasando por las
@@ -192,9 +198,11 @@ export function validateChapter(chapter: Chapter): ChapterReport {
     }
     return (t: Tile, map = MAIN_MAP) => seen.has(key(map, t));
   };
-  /** Si se puede llegar al lado de un personaje. */
-  const besideReachable = (a: Chapter["actors"][number], canReach: ReturnType<typeof reachable>) =>
-    DIRS.some(([dx, dy]) => canReach([a.at[0] + dx, a.at[1] + dy], a.map ?? MAIN_MAP));
+  /** Si se puede llegar al lado de un personaje (a quien acompaña al jugador, siempre). */
+  const besideReachable = (a: Chapter["actors"][number], canReach: ReturnType<typeof reachable>) => {
+    const at = pos.get(a.id)!;
+    return party.has(a.id) || DIRS.some(([dx, dy]) => canReach([at.tile[0] + dx, at.tile[1] + dy], at.map));
+  };
 
   /**
    * Revisa acciones. Con `simulate` (las de los pasos, que pasan en orden) además lleva la cuenta
@@ -235,7 +243,39 @@ export function validateChapter(chapter: Chapter): ChapterReport {
           if (!grids.has(a.map)) errors.push(`${where}: \`travel\` va al mapa «${a.map}», que no existe.`);
           else if (!inside(a.at, a.map) || SOLID.has(letter(a.at, a.map)))
             errors.push(`${where}: \`travel\` lleva a ${fmt(a.at)}, que no se puede pisar o está fuera de ${mapLabel(a.map)}.`);
-          else if (simulate && !a.when) playerAt = { map: a.map, tile: a.at };
+          else if (simulate && !a.when) {
+            playerAt = { map: a.map, tile: a.at };
+            for (const id of party) pos.set(id, { map: a.map, tile: a.at });
+          }
+          break;
+        case "move": {
+          const at = a.actor === "player" ? playerAt : pos.get(a.actor);
+          if (!at) {
+            errors.push(`${where}: \`move\` usa el personaje «${a.actor}», que no existe.`);
+            break;
+          }
+          const floating = actors.get(a.actor)?.floating;
+          if (!inside(a.to, at.map) || (!floating && SOLID.has(letter(a.to, at.map))))
+            errors.push(`${where}: \`move\` lleva a «${a.actor}» a ${fmt(a.to)}, que no se puede pisar o está fuera de ${mapLabel(at.map)}.`);
+          else if (simulate && !a.when) {
+            if (a.actor === "player") playerAt = { map: at.map, tile: a.to };
+            else {
+              pos.set(a.actor, { map: at.map, tile: a.to });
+              party.delete(a.actor);
+            }
+          }
+          if (a.ms !== undefined && a.ms < 0) errors.push(`${where}: \`move\` tiene un tiempo negativo.`);
+          break;
+        }
+        case "join":
+        case "leave":
+          if (!actors.has(a.actor)) errors.push(`${where}: \`${a.type}\` usa el personaje «${a.actor}», que no existe.`);
+          else if (simulate && a.type === "join") party.add(a.actor);
+          else if (simulate) party.delete(a.actor);
+          break;
+        case "zoom":
+          if (!(a.to > 0 && a.to <= 4)) errors.push(`${where}: \`zoom\` va de más de 0 a 4 (1 es lo normal).`);
+          if (a.ms !== undefined && a.ms < 0) errors.push(`${where}: \`zoom\` tiene un tiempo negativo.`);
           break;
         case "wait":
           if (a.ms < 0) errors.push(`${where}: \`wait\` tiene un tiempo negativo.`);

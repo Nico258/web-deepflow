@@ -82,7 +82,13 @@ const chapter: Chapter = {
 
   steps: [
     { id: "intro", goal: { type: "auto" }, onStart: [{ type: "say", dialog: "intro" }] },
-    { id: "hablar", objective: "Habla con el vecino", goal: { type: "talk", actor: "vecino" } },
+    {
+      id: "hablar",
+      objective: "Habla con el vecino",
+      goal: { type: "talk", actor: "vecino" },
+      // Desde aquí el vecino te acompaña: camina detrás, también dentro de la casa.
+      onDone: [{ type: "join", actor: "vecino" }],
+    },
     // Meta `flags`: se cumple cuando están marcadas todas, en cualquier orden. {n} y {total}
     // muestran cuántas van.
     {
@@ -94,8 +100,14 @@ const chapter: Chapter = {
       id: "salir",
       objective: "Sal por el camino",
       goal: { type: "reach", zone: { x: 18, y: 4, w: 2, h: 1 } },
-      // Con `when`, la acción solo se hace si se cumple: aquí, si se eligió ir a la fiesta.
-      onDone: [{ type: "say", dialog: "camino-a-la-fiesta", when: { flags: ["va-a-la-fiesta"] } }],
+      onDone: [
+        // El vecino deja de acompañar y camina solo hasta una casilla; la cámara se aleja.
+        { type: "leave", actor: "vecino" },
+        { type: "move", actor: "vecino", to: [15, 5] },
+        { type: "zoom", to: 0.5, ms: 1200 },
+        // Con `when`, la acción solo se hace si se cumple: aquí, si se eligió ir a la fiesta.
+        { type: "say", dialog: "camino-a-la-fiesta", when: { flags: ["va-a-la-fiesta"] } },
+      ],
     },
   ],
 

@@ -95,6 +95,14 @@ En `herd` y `flags`, el `objective` puede llevar `{n}` y `{total}` para mostrar 
 
 `say` (abre un diálogo), `show` / `hide` (aparece o desaparece un personaje), `flash` (destello de luz), `lighting` (cambia la luz: `day`, `night`, `glory`), `pan` / `follow` (mueve la cámara a un punto y vuelve al jugador), `wait` (pausa), `sfx` (efecto de sonido), `set` / `unset` (marca o desmarca banderas) y `travel` (lleva al jugador a otro mapa o casilla, con un fundido: `{ type: "travel", map: "casa", at: [4, 3] }`).
 
+Para que la escena se mueva:
+
+| Acción | Qué hace |
+|---|---|
+| `move` | Un personaje (o `"player"`) camina hasta una casilla de su mapa y se espera a que llegue: `{ type: "move", actor: "posadero", to: [12, 6] }`. `ms` es lo que tarda cada paso (por defecto 220). Los que flotan van en línea recta |
+| `join` / `leave` | Alguien empieza o deja de **acompañar** al jugador: camina detrás de él, no le tapa el paso y pasa con él a otros mapas (María con José, el burro). Se le puede hablar como siempre |
+| `zoom` | Acerca (más de 1) o aleja (menos de 1) la cámara respecto de lo normal; `1` la deja como estaba. Por ejemplo, `{ type: "zoom", to: 0.5, ms: 1200 }` para ver el cielo lleno de ángeles |
+
 Cualquier acción puede llevar `when` (la misma condición de «Banderas», más abajo): solo se hace si se cumple. Por ejemplo, `{ type: "say", dialog: "nos-vemos", when: { flags: ["va-a-la-fiesta"] } }`.
 
 ### Banderas y diálogos según lo que pasó
@@ -238,7 +246,6 @@ Así se arman los capítulos 1 a 7, 9 y ★ mientras el capítulo 8 se sigue pul
 - Un orden que funciona: un paso `auto` de introducción (dónde estamos, quién soy, qué pasa), 3 o 4 pasos con metas, **un momento especial** y el cierre.
 - Cada paso con meta tiene un `objective` corto en imperativo («Habla con Rubén», «Lleva las ovejas al corral»). Nadie debería quedarse sin saber qué hacer.
 - El mapa, pequeño: lo justo para el capítulo (el del 8 es de 40 × 26 casillas). Mejor pocos lugares con algo que hacer que mucho mapa vacío.
-- Personajes quietos, por ahora (ver «Lo que todavía no existe»).
 
 **Diálogos**
 
@@ -254,10 +261,10 @@ Así se arman los capítulos 1 a 7, 9 y ★ mientras el capítulo 8 se sigue pul
 
 **Lo que todavía no existe en el motor**
 
-Está en el plan (§7) y llegará sin romper los capítulos ya escritos, porque son campos opcionales nuevos. Mientras tanto, se arma el capítulo en línea recta con lo que hay:
+Está en el plan (§7) y llegará sin romper los capítulos ya escritos, porque son campos opcionales nuevos. Mientras tanto, se arma el capítulo con lo que hay:
 
-- Personajes que caminan solos o que acompañan al jugador.
-- Música por momento y acercar la cámara.
+- Personajes que caminan solos todo el tiempo (por ahora caminan con `move`, en una escena).
+- Música por momento.
 
 ## 4. Mapas en texto (prototipo)
 
@@ -329,7 +336,7 @@ Programa una persona. El primer capítulo (el 8) queda como **molde** para que o
 1. Indicadores: «!» sobre quien tiene algo que decir, marca del destino al tocar, menú de pausa y pistas (`hint`) por paso.
 2. Diálogos más accesibles (lector de pantalla, menos movimiento) y con pausas en la puntuación.
 3. Escena de los ángeles del capítulo 8: acercar la cámara y luz.
-4. Motor: banderas, diálogos según banderas, elecciones, objetos, personajes que caminan o acompañan y varios mapas.
+4. Motor: banderas, diálogos según banderas, elecciones, objetos, personajes que caminan o acompañan, acercar la cámara y varios mapas. *(hecho)*
 5. Arte: capa de dibujo, manifiesto de sprites y tamaño de casilla configurable. Después, mapas de Tiled (opcional).
 6. Sonido: música por momento y botón para silenciar.
 

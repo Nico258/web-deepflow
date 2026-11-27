@@ -13,6 +13,8 @@ import type { Action, Actor, Chapter, Choice, Exit, Flags, HerdConfig, Line, Lig
 
 export const TILE = 16;
 const STEP_MS = 150;
+/** Cuánto tarda cada paso de un personaje que camina con `move`, si no se dice otra cosa. */
+const MOVE_MS = 220;
 const SHEEP_STEP_MS = 220;
 /** Valores por defecto de los campos opcionales de `herd` (ver HerdConfig en types.ts). */
 const HERD_DEFAULTS = { paceMs: 320, homing: 0.2, helpAfterMs: 45_000, helpRampMs: 60_000, wander: 0.2 };
@@ -146,6 +148,10 @@ export class ChapterScene extends Phaser.Scene {
   private idleSince = 0;
   /** Banderas marcadas en este capítulo (ver `set` / `unset` y la meta `flags`). */
   private flags = new Set<string>();
+  /** Quienes acompañan al jugador (`join`), en orden: el primero va justo detrás. */
+  private party: Person[] = [];
+  /** Zoom respecto del normal (acción `zoom`). */
+  private zoomFactor = 1;
 
   private keys!: Record<"up" | "down" | "left" | "right" | "w" | "a" | "s" | "d", Phaser.Input.Keyboard.Key>;
 
@@ -244,17 +250,22 @@ export class ChapterScene extends Phaser.Scene {
   /** Zoom entero para que los píxeles se vean nítidos: ×2 en el celular, más en pantallas grandes. */
   private fitZoom() {
     const { width, height } = this.scale.gameSize;
-    this.cameras.main.setZoom(Math.max(2, Math.floor(Math.min(width, height) / (TILE * 14))));
+    this.cameras.main.setZoom(this.baseZoom() * this.zoomFactor);
     this.fitBounds();
   }
 
+  private baseZoom() {
+    const { width, height } = this.scale.gameSize;
+    return Math.max(2, Math.floor(Math.min(width, height) / (TILE * 14)));
+  }
+
   /** Límites de la cámara: el mapa; si el mapa es más chico que la pantalla (una casa), queda centrado. */
-  private fitBounds() {
+  private fitBounds(zoom = this.cameras.main.zoom) {
     const cam = this.cameras.main;
     const mapW = (this.grid[0]?.length ?? 0) * TILE;
     const mapH = this.grid.length * TILE;
-    const w = Math.max(mapW, cam.width / cam.zoom);
-    const h = Math.max(mapH, cam.height / cam.zoom);
+    const w = Math.max(mapW, cam.width / zoom);
+    const h = Math.max(mapH, cam.height / zoom);
     cam.setBounds((mapW - w) / 2, (mapH - h) / 2, w, h);
   }
 
@@ -297,6 +308,13 @@ export class ChapterScene extends Phaser.Scene {
     this.mapId = id;
     this.grid = grid;
     this.teleportPlayer(at);
+    // Los que acompañan llegan con el jugador, a su lado si hay lugar.
+    const free = DIRS.map(([dx, dy]): Tile => [at[0] + dx, at[1] + dy]).filter((t) => !SOLID.has(this.tileAt(t)) && !this.blockerAt(t));
+    this.party.forEach((p, i) => {
+      p.map = id;
+      p.tile = [...(free[i] ?? at)];
+      this.place(p.view, p.tile, p.actor.floating);
+    });
     this.enterMap();
     this.cameras.main.startFollow(this.player, true, 0.2, 0.2);
   }
@@ -437,6 +455,7 @@ export class ChapterScene extends Phaser.Scene {
     this.drawFacing();
     const to: Tile = [this.playerTile[0] + dir[0], this.playerTile[1] + dir[1]];
     if (!this.walkable(to) || this.sheepAt(to)) return false;
+    this.followPlayer(this.playerTile);
     this.playerTile = to;
     this.moving = true;
     const c = center(to);
@@ -618,6 +637,23 @@ export class ChapterScene extends Phaser.Scene {
         return;
       case "travel":
         return this.travel(a.map, a.at);
+      case "move":
+        return this.moveActor(a.actor, a.to, a.ms ?? MOVE_MS);
+      case "join":
+      case "leave":
+        for (const p of this.peopleIn(a.actor)) this.setInParty(p, a.type === "join");
+        return;
+      case "zoom": {
+        this.zoomFactor = a.to;
+        const target = this.baseZoom() * a.to;
+        // Mientras cambia, los límites sirven para el zoom más alejado; al final se ajustan.
+        this.fitBounds(Math.min(cam.zoom, target));
+        const ms = a.ms ?? 900;
+        cam.zoomTo(target, ms, "Sine.easeInOut");
+        await this.wait(ms);
+        this.fitBounds();
+        return;
+      }
     }
   }
 
@@ -696,6 +732,19 @@ export class ChapterScene extends Phaser.Scene {
         this.overlay.setFillStyle(l.color, l.alpha);
         this.setGlows(a.mode);
       } else if (a.type === "travel") this.switchMap(a.map, a.at);
+      else if (a.type === "move") {
+        if (a.actor === "player") this.teleportPlayer(a.to);
+        else
+          for (const p of this.peopleIn(a.actor)) {
+            p.tile = [...a.to];
+            this.place(p.view, p.tile, p.actor.floating);
+            if (p.actor.floating && !p.hidden) this.startBob(p);
+          }
+      } else if (a.type === "join" || a.type === "leave") for (const p of this.peopleIn(a.actor)) this.setInParty(p, a.type === "join");
+      else if (a.type === "zoom") {
+        this.zoomFactor = a.to;
+        this.fitZoom();
+      }
     }
   }
 
@@ -1044,11 +1093,109 @@ export class ChapterScene extends Phaser.Scene {
 
   /** Casilla que el jugador puede pisar (las ovejas se revisan aparte porque se mueven). */
   private walkable(t: Tile) {
-    return !SOLID.has(this.tileAt(t)) && !this.personAt(t);
+    return !SOLID.has(this.tileAt(t)) && !this.blockerAt(t);
+  }
+
+  /** Alguien que tapa el paso en esta casilla. Los que acompañan no: el jugador pasa y ellos lo siguen. */
+  private blockerAt(t: Tile) {
+    const p = this.personAt(t);
+    return p && !this.party.includes(p) ? p : undefined;
   }
 
   private sheepCanGo(t: Tile) {
-    return this.walkable(t) && !same(t, this.playerTile) && !this.sheepAt(t);
+    return this.walkable(t) && !this.personAt(t) && !same(t, this.playerTile) && !this.sheepAt(t);
+  }
+
+  // ───────── Personajes que caminan y acompañan ─────────
+
+  /** Suma o saca a alguien de los que acompañan al jugador. */
+  private setInParty(p: Person, on: boolean) {
+    this.party = this.party.filter((x) => x !== p);
+    if (on) this.party.push(p);
+  }
+
+  /** Cuando el jugador da un paso desde `from`, cada acompañante pasa a donde estaba el de adelante. */
+  private followPlayer(from: Tile) {
+    let lead = from;
+    for (const p of this.party) {
+      if (p.map !== this.mapId || same(p.tile, lead)) break;
+      const prev = p.tile;
+      p.tile = [...lead];
+      this.stepView(p.view, lead, STEP_MS * 1.2, p.actor.floating);
+      lead = prev;
+    }
+  }
+
+  /** Mueve una figura a una casilla con una animación corta. */
+  private stepView(view: Figure, to: Tile, ms: number, floating = false) {
+    const c = center(to);
+    return this.tweenAsync({
+      targets: view,
+      x: c.x,
+      y: c.y,
+      duration: ms,
+      onUpdate: () => view.setDepth(floating ? 1002 : 10 + view.y),
+    } as Phaser.Types.Tweens.TweenBuilderConfig);
+  }
+
+  /** Acción `move`: camina (por casillas libres) hasta `to` y espera a que llegue. */
+  private async moveActor(id: string, to: Tile, ms: number) {
+    if (id === "player") {
+      const route = this.findPath([to]);
+      if (!route) return void this.teleportPlayer(to);
+      for (const t of route) {
+        this.faceTowards(t);
+        this.followPlayer(this.playerTile);
+        this.playerTile = t;
+        await this.stepView(this.player, t, ms);
+      }
+      this.updateLabels();
+      return;
+    }
+    for (const p of this.peopleIn(id)) {
+      this.setInParty(p, false);
+      // Si no está en el mapa del jugador, o flota, o no hay camino, llega de una.
+      const route = p.map === this.mapId && !p.actor.floating ? this.routeFor(p, to) : null;
+      if (!route) {
+        const from = p.tile;
+        p.tile = [...to];
+        if (p.map === this.mapId && p.actor.floating) {
+          p.bob?.stop();
+          await this.stepView(p.view, to, ms * Math.max(1, manhattan(from, to)), true);
+          if (!p.hidden) this.startBob(p);
+        } else this.place(p.view, to, p.actor.floating);
+        continue;
+      }
+      for (const t of route) {
+        p.tile = t;
+        await this.stepView(p.view, t, ms);
+      }
+    }
+    this.updateLabels();
+  }
+
+  /** Camino de un personaje hasta una casilla, sin pasar por muros, otras personas, ovejas ni el jugador. */
+  private routeFor(p: Person, to: Tile): Tile[] | null {
+    const w = this.grid[0].length;
+    const key = (t: Tile) => t[1] * w + t[0];
+    const free = (t: Tile) => !SOLID.has(this.tileAt(t)) && !same(t, this.playerTile) && !this.sheepAt(t) && (this.personAt(t) ?? p) === p;
+    const prev = new Map<number, Tile | null>([[key(p.tile), null]]);
+    const queue: Tile[] = [p.tile];
+    while (queue.length) {
+      const cur = queue.shift()!;
+      if (same(cur, to)) {
+        const route: Tile[] = [];
+        for (let t: Tile | null = cur; t && !same(t, p.tile); t = prev.get(key(t)) ?? null) route.unshift(t);
+        return route;
+      }
+      for (const [dx, dy] of DIRS) {
+        const n: Tile = [cur[0] + dx, cur[1] + dy];
+        if (prev.has(key(n)) || !free(n)) continue;
+        prev.set(key(n), cur);
+        queue.push(n);
+      }
+    }
+    return null;
   }
 
   /** Camino más corto (búsqueda en anchura) hasta cualquiera de las casillas meta. */
