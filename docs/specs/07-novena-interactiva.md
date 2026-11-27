@@ -164,7 +164,7 @@ Un personaje con `kind: "object"` es una cosa del mapa: un cántaro, una canasta
 
 No hay inventario (§9): **tener algo es una bandera**. Recoger es marcarla y ocultar el objeto; usarlo es un caso de `talk` que pide esa bandera.
 
-Para que se note lo que se lleva, el capítulo lo declara en `items`: mientras la bandera esté marcada, el objeto se ve como un ícono arriba a la derecha. Al tocarlo aparece su nombre y `hint`, que recuerda para qué sirve. Es solo informativo: no se abre nada ni se usa desde ahí. Al desmarcar la bandera (por ejemplo, al entregarlo), desaparece.
+Para que se note lo que se lleva, el capítulo lo declara en `items`: mientras la bandera esté marcada, el objeto se ve como un ícono a la derecha, debajo del objetivo. Al tocarlo aparece su nombre y `hint`, que recuerda para qué sirve. Es solo informativo: no se abre nada ni se usa desde ahí. Al desmarcar la bandera (por ejemplo, al entregarlo), desaparece.
 
 ```ts
 items: [{ flag: "tiene-pan", name: "Pan", color: 0xc9a25a, hint: "Para cargarlo en el burro." }],

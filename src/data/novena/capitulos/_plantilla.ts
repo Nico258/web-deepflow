@@ -81,7 +81,7 @@ const chapter: Chapter = {
     { id: "mesa", name: "Mesa", kind: "object", at: [6, 2], color: 0x7a5230 },
   ],
 
-  // Lo que se lleva: mientras su bandera esté marcada, se ve arriba a la derecha. Al tocarlo,
+  // Lo que se lleva: mientras su bandera esté marcada, se ve a la derecha, debajo del objetivo. Al tocarlo,
   // `hint` recuerda para qué sirve.
   items: [{ flag: "tiene-canasta", name: "Canasta", color: 0xc9a25a, hint: "Pan para la fiesta de esta noche." }],
 

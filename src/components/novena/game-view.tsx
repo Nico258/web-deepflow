@@ -36,7 +36,8 @@ export function GameView({ info, chapter, startAt, next, onExit, onComplete, onP
   /** El objeto cuya pista se está leyendo (por su nombre). */
   const [tip, setTip] = useState<string | null>(null);
   const hudRef = useRef<HTMLDivElement>(null);
-  const objectiveRef = useRef<HTMLParagraphElement>(null);
+  /** Debajo de la barra: el objetivo y, a la derecha, lo que lleva el jugador. */
+  const topRef = useRef<HTMLDivElement>(null);
   const [finished, setFinished] = useState(false);
   const [confirmExit, setConfirmExit] = useState(false);
   const [round, setRound] = useState(0);
@@ -75,27 +76,27 @@ export function GameView({ info, chapter, startAt, next, onExit, onComplete, onP
     };
   }, [bus, chapter, info.slug, startAt, round]);
 
-  // Le dice al juego cuánto ocupan arriba la barra y el objetivo, para que la cámara no deje al
-  // jugador (ni el borde del mapa) debajo. Mientras el objetivo no se ve (en un diálogo), se guarda
-  // su lugar con el último alto medido, para que la cámara no salte.
-  const objectiveSpace = useRef(48);
-  const objectiveShown = !!objective && !dialog;
+  // Le dice al juego cuánto ocupan arriba la barra, el objetivo y lo que lleva el jugador, para que
+  // la cámara no deje al jugador (ni el borde del mapa) debajo. Mientras no se ven (en un diálogo),
+  // se guarda su lugar con el último alto medido, para que la cámara no salte.
+  const topSpace = useRef(48);
+  const showTop = !dialog && (!!objective || items.length > 0);
   useEffect(() => {
     const hud = hudRef.current;
-    if (!hud) return;
+    const below = topRef.current;
+    if (!hud || !below) return;
     const measure = () => {
       const top = hud.parentElement!.getBoundingClientRect().top;
       const hudBottom = hud.getBoundingClientRect().bottom - top;
-      const obj = objectiveRef.current;
-      if (obj) objectiveSpace.current = obj.getBoundingClientRect().bottom - top - hudBottom;
-      bus.emit("hudInset", Math.round(hudBottom + objectiveSpace.current + 8));
+      if (below.querySelector(".nv-objective, .nv-items")) topSpace.current = below.getBoundingClientRect().bottom - top - hudBottom;
+      bus.emit("hudInset", Math.round(hudBottom + topSpace.current + 8));
     };
     measure();
     const ro = new ResizeObserver(measure);
     ro.observe(hud);
-    if (objectiveRef.current) ro.observe(objectiveRef.current);
+    ro.observe(below);
     return () => ro.disconnect();
-  }, [bus, objectiveShown, objective, round]);
+  }, [bus, showTop, round]);
 
   // La pista de un objeto se cierra sola, con Escape o al tocar en otro lado.
   useEffect(() => {
@@ -147,7 +148,15 @@ export function GameView({ info, chapter, startAt, next, onExit, onComplete, onP
         <span className="nv-hud-title">
           {chapterLabel(info)} · {info.title}
         </span>
-        {items.length > 0 && (
+      </div>
+
+      <div className="nv-top" ref={topRef}>
+        {objective && !dialog && (
+          <p className="nv-objective" role="status">
+            <span aria-hidden="true">✦</span> {objective}
+          </p>
+        )}
+        {items.length > 0 && !dialog && (
           // Solo informa: tocar un objeto recuerda para qué sirve.
           <div className="nv-items" role="group" aria-label="Lo que llevas">
             {items.map((item) => (
@@ -165,7 +174,7 @@ export function GameView({ info, chapter, startAt, next, onExit, onComplete, onP
             ))}
           </div>
         )}
-        <p id="nv-item-tip" className="nv-item-tip" role="status" hidden={!tipItem}>
+        <p id="nv-item-tip" className="nv-item-tip" role="status" hidden={!tipItem || !!dialog}>
           {tipItem && (
             <>
               <strong>{tipItem.name}</strong>
@@ -174,12 +183,6 @@ export function GameView({ info, chapter, startAt, next, onExit, onComplete, onP
           )}
         </p>
       </div>
-
-      {objectiveShown && (
-        <p className="nv-objective" role="status" ref={objectiveRef}>
-          <span aria-hidden="true">✦</span> {objective}
-        </p>
-      )}
 
       {dialog && <DialogBox key={dialog.id} lines={dialog.lines} onDone={closeDialog} active={!confirmExit} />}
 

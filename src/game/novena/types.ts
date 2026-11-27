@@ -164,7 +164,7 @@ export type HerdConfig = {
 };
 
 /**
- * Algo que el jugador lleva (la canasta, el pan). Se ve arriba a la derecha mientras su bandera
+ * Algo que el jugador lleva (la canasta, el pan). Se ve a la derecha, debajo del objetivo, mientras su bandera
  * esté marcada; al tocarlo se lee `hint`, para recordar para qué sirve. No es un inventario: no se
  * usa desde ahí, solo informa.
  */
