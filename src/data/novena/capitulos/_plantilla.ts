@@ -12,7 +12,8 @@ import type { Chapter } from "@/game/novena/types";
 //    revisa el guion y lo recorre de punta a punta en escritorio y en celular. No corre solo
 //    con el build, y no hay que escribir pruebas nuevas (spec 07 §3).
 //
-// El capítulo 8 (08-pastores.ts) es el ejemplo completo.
+// El capítulo 8 (08-pastores.ts) es el ejemplo completo. El estándar (forma, tono, citas NTV y
+// lo que el motor todavía no tiene) está en la spec 07 §3, «Escribir un capítulo nuevo».
 
 const chapter: Chapter = {
   map: {

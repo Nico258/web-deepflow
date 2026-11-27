@@ -125,6 +125,48 @@ Para un momento jugable nuevo (cargar el burro, tocar puertas…), primero hay q
   - Si ya hay un `pnpm dev` abierto en el puerto 3000, las pruebas lo usan; si no, lo abren solas.
 - **Consola:** en desarrollo, `window.__novena` tiene herramientas de depuración: `state()` (paso actual, meta, posición), `completeStep()` (cumple la meta actual), `teleport([x, y])`, `actorTile(id)` y `scene` (la escena de Phaser). Las pruebas usan solo estas funciones; si el motor cambia, se ajustan ahí (`NovenaDebug` en `chapter-scene.ts`).
 
+### Escribir un capítulo nuevo (el estándar)
+
+Así se arman los capítulos 1 a 7, 9 y ★ mientras el capítulo 8 se sigue puliendo. **Primero todo funcional, con cuadros de colores; el arte se agrega y se adapta después** (§5), sin tocar los guiones.
+
+**Cómo trabajar**
+
+- Una rama y un PR por capítulo, desde `main` (por ejemplo `feature/novena-cap-2`). El PR toca solo `src/data/novena/capitulos/NN-nombre.ts` y el `load` en `chapters.ts`.
+- Se parte de `_plantilla.ts` y se mira `08-pastores.ts` como ejemplo completo.
+- Si un momento jugable no se puede armar con las metas y acciones que existen, **no se fuerza el motor dentro del capítulo**: se arma una versión simple con lo que hay y se pide la pieza nueva aparte, para que la agregue quien lleva el motor y quede para todos.
+- Antes de pedir revisión: el validador sin errores en la consola y `pnpm test:novena` pasando.
+
+**Forma del capítulo**
+
+- **Unos 5 minutos** jugando sin apuro. Como medida, el capítulo 8 tiene 5 pasos y unas 40 líneas de diálogo.
+- Un orden que funciona: un paso `auto` de introducción (dónde estamos, quién soy, qué pasa), 3 o 4 pasos con metas, **un momento especial** y el cierre.
+- Cada paso con meta tiene un `objective` corto en imperativo («Habla con Rubén», «Lleva las ovejas al corral»). Nadie debería quedarse sin saber qué hacer.
+- El mapa, pequeño: lo justo para el capítulo (el del 8 es de 40 × 26 casillas). Mejor pocos lugares con algo que hacer que mucho mapa vacío.
+- Un mapa por capítulo y personajes quietos, por ahora (ver «Lo que todavía no existe»).
+
+**Diálogos**
+
+- Tono juvenil, con humor ligero y personajes con personalidad, sin burlarse de la historia ni de los personajes bíblicos.
+- Líneas cortas: una o dos oraciones (en el celular se leen en una caja pequeña). Mejor varias líneas cortas que una larga.
+- `narrator` para describir lo que pasa; `player` para el personaje que se maneja.
+- Lo que se cuenta sigue el pasaje del capítulo. Se pueden inventar personajes secundarios y conversaciones del día a día (un vecino, un pastor compañero), pero no hechos que contradigan el relato.
+
+**Citas bíblicas**
+
+- Las palabras de la Biblia que dicen los personajes y el versículo del cierre van **tal cual en la NTV**, con la referencia exacta. Se copian del texto oficial; **nunca se citan de memoria ni se inventan**. Si no se tiene el texto a mano, se deja anotado en el PR para revisarlo.
+- El cierre (`ending`) tiene el versículo, la referencia y **una pregunta corta** para pensar, que conecte la historia con la vida de quien juega.
+
+**Lo que todavía no existe en el motor**
+
+Está en el plan (§7) y llegará sin romper los capítulos ya escritos, porque son campos opcionales nuevos. Mientras tanto, se arma el capítulo en línea recta con lo que hay:
+
+- Recordar decisiones o cosas hechas (banderas) y diálogos que cambian según eso.
+- Elegir entre respuestas en un diálogo.
+- Objetos para recoger o usar.
+- Personajes que caminan solos o que acompañan al jugador.
+- Varios mapas en un capítulo (salir de una casa a la calle).
+- Música por momento y acercar la cámara.
+
 ## 4. Mapas en texto (prototipo)
 
 Cada letra es una casilla de 16 × 16 px:
@@ -184,10 +226,19 @@ Programa una persona. El primer capítulo (el 8) queda como **molde** para que o
 |---|---|---|
 | 1. Prototipo | ~1 de dic | Motor, mapa de capítulos y **capítulo 8 completo con cuadros de colores**. Lista de piezas de arte. *(hecho en esta rama)* |
 | 2. Molde | ~4 de dic | Probar el capítulo 8 en celulares reales, ajustar controles y ritmo, y elegir el pack base de arte |
-| 3. Capítulos | ~5 al 12 de dic | Capítulos 1 a 7 y 9 con cuadros de colores, entre dos personas. Diseño en paralelo |
+| 3. Capítulos | ~5 al 12 de dic | Capítulos 1 a 7 y 9 con cuadros de colores, entre dos personas, siguiendo el estándar de §3. Diseño en paralelo |
 | 4. Arte y sonido | ~8 al 14 de dic | Integrar los sprites, el mapa general, la música y los efectos |
 | 5. Lanzamiento | 15 de dic | Tarjeta en la página principal y pruebas finales |
 | Después | Antes del 6 de ene | Capítulo ★ |
+
+**Primero funcional, después el arte.** Los capítulos se escriben y se prueban con cuadros de colores. El arte entra después en el motor (capa de dibujo y manifiesto de sprites), sin cambiar los guiones. Mientras tanto, el capítulo 8 se sigue puliendo como molde y el motor suma piezas en etapas pequeñas:
+
+1. Indicadores: «!» sobre quien tiene algo que decir, marca del destino al tocar, menú de pausa y pistas (`hint`) por paso.
+2. Diálogos más accesibles (lector de pantalla, menos movimiento) y con pausas en la puntuación.
+3. Escena de los ángeles del capítulo 8: acercar la cámara y luz.
+4. Motor: banderas, diálogos según banderas, elecciones, objetos, personajes que caminan o acompañan y varios mapas.
+5. Arte: capa de dibujo, manifiesto de sprites y tamaño de casilla configurable. Después, mapas de Tiled (opcional).
+6. Sonido: música por momento y botón para silenciar.
 
 **Plan B:** si no alcanza, los capítulos se publican de a poco (por ejemplo, del 1 al 4 el 16 de diciembre y uno nuevo cada día). Los capítulos que aún no existen se ven en el mapa como «Próximamente».
 
@@ -195,7 +246,8 @@ Programa una persona. El primer capítulo (el 8) queda como **molde** para que o
 
 - Probar el capítulo 8 en iPhone y Android: comodidad de tocar para caminar, tamaño del texto y duración real.
 - Tarjeta de la actividad en la página principal (cuando haya al menos 3 capítulos jugables).
-- Guion de los capítulos 1 a 7, 9 y ★: diálogos y pasos, siguiendo el formato del capítulo 8.
+- Guion de los capítulos 1 a 7, 9 y ★: diálogos y pasos, siguiendo el estándar de §3.
+- Revisar contra el texto oficial de la NTV las citas del capítulo 8 (Lucas 2:10-12 en el anuncio, Lucas 2:14 en el canto y el versículo del cierre).
 - Botón para silenciar el sonido, cuando haya sonido.
 
 ## 9. Fuera de alcance por ahora
