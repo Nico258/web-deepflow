@@ -8,3 +8,7 @@ build/
 !.env.example
 next-env.d.ts
 .claude/
+
+# Pruebas de Playwright
+/test-results/
+/playwright-report/

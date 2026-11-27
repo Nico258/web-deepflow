@@ -7,16 +7,19 @@
     "dev": "next dev --turbo",
     "build": "next build --webpack",
     "start": "next start",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "test:novena": "playwright test"
   },
   "dependencies": {
     "@phosphor-icons/react": "^2.1.10",
     "html-to-image": "^1.11.13",
     "next": "^16.4.0",
+    "phaser": "^3.90.0",
     "react": "^19.3.0",
     "react-dom": "^19.3.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.65.1",
     "@tailwindcss/postcss": "^4.3.0",
     "@types/node": "^22.0.0",
     "@types/react": "^19.0.0",
