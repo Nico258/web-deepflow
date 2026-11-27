@@ -161,6 +161,8 @@ export class ChapterScene extends Phaser.Scene {
   /** Cuándo empezó el paso actual y si ya se mostró su pista sola. */
   private stepStartedAt = 0;
   private hintShown = false;
+  /** El «!» de cada personaje que hace avanzar el paso (ver refreshAlerts). */
+  private alerts = new Map<Person, Phaser.GameObjects.Container>();
   /** Marca en la casilla adonde va el jugador después de tocar el mapa. */
   private destMark?: Phaser.GameObjects.Rectangle;
 
@@ -419,6 +421,7 @@ export class ChapterScene extends Phaser.Scene {
 
   update() {
     this.updateSheepArrows();
+    this.placeAlerts();
     if (!this.hintShown && this.step?.hint && !this.done && this.time.now - this.stepStartedAt >= HINT_AFTER_MS) {
       this.hintShown = true;
       this.bus.emit("hint", { text: this.step.hint, show: true });
@@ -1040,23 +1043,36 @@ export class ChapterScene extends Phaser.Scene {
   private refreshAlerts() {
     const targets = new Set(this.talkTargets());
     for (const p of this.people.values()) {
-      let alert = p.view.getByName("alert") as Phaser.GameObjects.Text | null;
+      let alert = this.alerts.get(p);
       if (!targets.has(p)) {
-        alert?.setVisible(false);
+        alert?.destroy();
+        this.alerts.delete(p);
         continue;
       }
-      if (!alert) {
-        // Encima del nombre (las personas lo llevan más arriba que los objetos).
-        const y = p.actor.floating ? -16 : p.actor.kind === "object" ? -14 : -23;
-        alert = this.add
-          .text(0, y, "!", { fontFamily: "monospace", fontSize: "8px", fontStyle: "bold", color: "#2a1d07", backgroundColor: "#f2c35b", padding: { x: 2, y: 0 } })
-          .setOrigin(0.5, 1)
-          .setResolution(4)
-          .setName("alert");
-        p.view.add(alert);
-        this.tweens.add({ targets: alert, y: y - 2, duration: 450, yoyo: true, repeat: -1, ease: "Sine.inOut" });
-      }
-      alert.setVisible(true);
+      if (alert) continue;
+      // Amarillo con borde oscuro, sin caja: se ve sobre pasto, tierra y piedra. Va encima de la
+      // capa de noche (no es parte de la figura), así que de noche no se apaga.
+      const mark = this.add
+        .text(0, 0, "!", { fontFamily: "monospace", fontSize: "10px", fontStyle: "bold", color: "#ffd84a", stroke: "#2a1d07", strokeThickness: 3 })
+        .setOrigin(0.5, 1)
+        .setResolution(4);
+      alert = this.add.container(0, 0, [mark]).setDepth(1003);
+      this.tweens.add({ targets: mark, y: -2, duration: 450, yoyo: true, repeat: -1, ease: "Sine.inOut" });
+      this.alerts.set(p, alert);
+    }
+    this.placeAlerts();
+  }
+
+  /**
+   * Sigue a cada personaje con su «!»: justo sobre la cabeza, con un poco de aire; si se ve su
+   * nombre, encima del nombre. Se ve solo si el personaje se ve (está en este mapa y no oculto).
+   */
+  private placeAlerts() {
+    for (const [p, alert] of this.alerts) {
+      const label = p.view.getByName("label") as Phaser.GameObjects.Text | null;
+      const named = !!label?.visible;
+      const dy = p.actor.floating ? -14 : p.actor.kind === "object" ? (named ? -13 : -5) : named ? -22 : -12;
+      alert.setPosition(p.view.x, p.view.y + dy).setVisible(p.view.visible).setAlpha(p.view.alpha);
     }
   }
 
@@ -1425,6 +1441,7 @@ export class ChapterScene extends Phaser.Scene {
       const label = p.view.getByName("label") as Phaser.GameObjects.Text | null;
       label?.setVisible(manhattan(p.tile, this.playerTile) <= LABEL_RANGE);
     }
+    this.placeAlerts();
   }
 
   private startBob(p: Person) {
