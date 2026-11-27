@@ -12,8 +12,28 @@ export type Lighting = "day" | "night" | "glory";
 /** Quién dice una línea: el id de un personaje, "player" o "narrator". */
 export type Line = { who: string; text: string };
 
+/**
+ * Banderas: nombres que el capítulo marca para recordar lo que ya pasó («toco-casa-1», «tiene-pan»).
+ * Empiezan todas sin marcar y se pierden al salir del capítulo.
+ */
+export type Flags = string | string[];
+
+/**
+ * Condición para un caso de `talk`. Se cumple si se cumple todo lo que trae:
+ * - `step`: el paso actual es este (o uno de estos).
+ * - `flags`: todas estas banderas están marcadas.
+ * - `not`: ninguna de estas banderas está marcada.
+ */
+export type Condition = { step?: string | string[]; flags?: string[]; not?: string[] };
+
+/** Un caso de lo que dice un personaje al hablarle. `set` y `unset` se aplican al terminar el diálogo. */
+export type TalkCase = { when?: Condition; dialog: string; set?: Flags; unset?: Flags };
+
 export type Action =
   | { type: "say"; dialog: string }
+  /** Marca o desmarca una o varias banderas. */
+  | { type: "set"; flag: Flags }
+  | { type: "unset"; flag: Flags }
   /** Uno o varios personajes a la vez. */
   | { type: "show"; actor: string | string[] }
   | { type: "hide"; actor: string | string[] }
@@ -28,11 +48,16 @@ export type Goal =
   | { type: "auto" }
   | { type: "talk"; actor: string }
   | { type: "reach"; zone: Zone }
-  | { type: "herd" };
+  | { type: "herd" }
+  /** Se cumple cuando están marcadas todas estas banderas, en cualquier orden. */
+  | { type: "flags"; all: string[] };
 
 export type Step = {
   id: string;
-  /** Lo que se ve arriba como objetivo. En `herd`, {n} y {total} se reemplazan por el conteo. */
+  /**
+   * Lo que se ve arriba como objetivo. En `herd` y `flags`, {n} y {total} se reemplazan por el conteo
+   * (ovejas en el corral, o banderas de la meta ya marcadas).
+   */
   objective?: string;
   goal: Goal;
   onStart?: Action[];
@@ -50,8 +75,13 @@ export type Actor = {
   hidden?: boolean;
   /** Flota y no bloquea el paso (ángeles). No lleva nombre encima: se presenta en el diálogo. */
   floating?: boolean;
-  /** Qué diálogo abre al hablarle, según el id del paso actual; `default` para el resto. */
-  talk?: Record<string, string>;
+  /**
+   * Qué dice al hablarle. Dos formas:
+   * - Simple: `{ idDelPaso: "dialogo", default: "otro" }`, según el paso actual.
+   * - Por casos: una lista de `TalkCase`; se usa el primero cuya condición se cumpla (un caso
+   *   sin `when` sirve siempre, así que va al final). Cada caso puede marcar banderas.
+   */
+  talk?: Record<string, string> | TalkCase[];
 };
 
 /**

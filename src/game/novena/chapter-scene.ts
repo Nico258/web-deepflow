@@ -1,7 +1,8 @@
 import * as Phaser from "phaser";
 import type { NovenaBus, ResolvedLine } from "./bus";
 import { DIRS, SOLID, inZone, manhattan, same, toGrid } from "./map";
-import type { Action, Actor, Chapter, HerdConfig, Lighting, Step, Tile } from "./types";
+import { currentTalk, flagList } from "./rules";
+import type { Action, Actor, Chapter, Flags, HerdConfig, Lighting, Step, Tile } from "./types";
 
 // Motor de un capítulo. Lee el guion (src/data/novena/capitulos/*) y lo vuelve jugable:
 // dibuja el mapa, mueve al jugador por casillas, recorre los pasos y le pide a React
@@ -58,8 +59,13 @@ export type SceneOptions = { chapter: Chapter; bus: NovenaBus; startAt?: string 
 export type DebugState = {
   step: string | null;
   goal: Step["goal"]["type"] | null;
-  /** Con quién hay que hablar, si la meta es `talk`. */
+  /**
+   * Con quién hay que hablar: en `talk`, el de la meta; en `flags`, alguien cuyo diálogo de ahora
+   * marca una bandera que falta (si hay).
+   */
   talkTo: string | null;
+  /** Banderas marcadas. */
+  flags: string[];
   busy: boolean;
   done: boolean;
   player: Tile;
@@ -76,7 +82,8 @@ export type NovenaDebug = {
   state(): DebugState;
   /**
    * Cumple la meta del paso actual como si se hubiera jugado: `talk` habla con el personaje,
-   * `reach` lleva al jugador a la zona y `herd` mete las ovejas al corral. Devuelve false si
+   * `reach` lleva al jugador a la zona, `herd` mete las ovejas al corral y `flags` habla con
+   * quien marca una bandera que falta (o, si nadie, las marca de una vez). Devuelve false si
    * en ese momento no se puede (hay un diálogo o una escena, o la meta es `auto`).
    */
   completeStep(): boolean;
@@ -128,6 +135,8 @@ export class ChapterScene extends Phaser.Scene {
   private done = false;
   /** Evita que la misma tecla que cerró un diálogo abra otro. */
   private idleSince = 0;
+  /** Banderas marcadas en este capítulo (ver `set` / `unset` y la meta `flags`). */
+  private flags = new Set<string>();
 
   private keys!: Record<"up" | "down" | "left" | "right" | "w" | "a" | "s" | "d", Phaser.Input.Keyboard.Key>;
 
@@ -417,6 +426,7 @@ export class ChapterScene extends Phaser.Scene {
     const goal = step.goal;
     if (goal.type === "auto" || (goal.type === "reach" && inZone(this.playerTile, goal.zone))) return this.finishStep();
     if (goal.type === "herd" && this.herdComplete()) return this.finishStep();
+    if (this.flagsGoalMet()) return this.finishStep();
   }
 
   private async finishStep() {
@@ -429,20 +439,39 @@ export class ChapterScene extends Phaser.Scene {
   private showObjective() {
     const text = this.step?.objective;
     if (!text) return this.bus.emit("objective", null);
-    const n = this.sheep.filter((s) => s.penned).length;
-    this.bus.emit("objective", text.replace("{n}", String(n)).replace("{total}", String(this.sheep.length)));
+    const goal = this.step?.goal;
+    const [n, total] =
+      goal?.type === "flags" ? [goal.all.filter((f) => this.flags.has(f)).length, goal.all.length] : [this.sheep.filter((s) => s.penned).length, this.sheep.length];
+    this.bus.emit("objective", text.replace("{n}", String(n)).replace("{total}", String(total)));
   }
 
   private async talkTo(person: Person) {
-    const talk = person.actor.talk;
-    const dialog = talk?.[this.step?.id ?? ""] ?? talk?.default;
-    if (!dialog) return;
+    const talk = currentTalk(person.actor, this.step?.id, this.flags);
+    if (!talk) return;
     this.faceTowards(person.tile);
     await this.progress(async () => {
-      await this.say(dialog);
+      await this.say(talk.dialog);
+      this.setFlags(talk.set, true);
+      this.setFlags(talk.unset, false);
       const goal = this.step?.goal;
-      if (goal?.type === "talk" && goal.actor === person.actor.id) await this.finishStep();
+      if ((goal?.type === "talk" && goal.actor === person.actor.id) || this.flagsGoalMet()) await this.finishStep();
     });
+  }
+
+  private setFlags(flags: Flags | undefined, on: boolean) {
+    const list = flagList(flags);
+    if (!list.length) return;
+    for (const f of list) {
+      if (on) this.flags.add(f);
+      else this.flags.delete(f);
+    }
+    if (this.step?.goal.type === "flags") this.showObjective();
+  }
+
+  /** Si la meta del paso es `flags` y ya están todas marcadas. */
+  private flagsGoalMet() {
+    const goal = this.step?.goal;
+    return goal?.type === "flags" && goal.all.every((f) => this.flags.has(f));
   }
 
   private async run(actions: Action[]) {
@@ -454,6 +483,9 @@ export class ChapterScene extends Phaser.Scene {
     switch (a.type) {
       case "say":
         return this.say(a.dialog);
+      case "set":
+      case "unset":
+        return this.setFlags(a.flag, a.type === "set");
       case "show":
       case "hide": {
         const show = a.type === "show";
@@ -523,7 +555,22 @@ export class ChapterScene extends Phaser.Scene {
 
   /** Para el atajo de desarrollo: deja el mundo como si el paso ya se hubiera jugado, sin diálogos. */
   private skipStep(step: Step) {
-    if (step.goal.type === "herd") this.penAllSheep();
+    const goal = step.goal;
+    if (goal.type === "herd") this.penAllSheep();
+    const done = (actions?: Action[]) => {
+      for (const a of actions ?? []) if (a.type === "set" || a.type === "unset") this.setFlags(a.flag, a.type === "set");
+    };
+    done(step.onStart);
+    // La meta se da por cumplida: las banderas que pide quedan marcadas, y hablar con alguien
+    // marca las mismas que marcaría su diálogo.
+    if (goal.type === "flags") this.setFlags(goal.all, true);
+    if (goal.type === "talk") {
+      const person = this.people.get(goal.actor);
+      const talk = person && currentTalk(person.actor, step.id, this.flags);
+      this.setFlags(talk?.set, true);
+      this.setFlags(talk?.unset, false);
+    }
+    done(step.onDone);
     for (const a of [...(step.onStart ?? []), ...(step.onDone ?? [])]) {
       if (a.type === "show" || a.type === "hide") {
         for (const p of this.peopleIn(a.actor)) {
@@ -741,14 +788,28 @@ export class ChapterScene extends Phaser.Scene {
 
   // ───────── Depuración (solo en desarrollo) ─────────
 
+  /** A quién hay que hablarle para avanzar (ver `DebugState.talkTo`). */
+  private talkTarget(): Person | undefined {
+    const goal = this.step?.goal;
+    if (goal?.type === "talk") return this.people.get(goal.actor);
+    if (goal?.type !== "flags") return undefined;
+    const missing = goal.all.filter((f) => !this.flags.has(f));
+    return [...this.people.values()].find((p) => {
+      if (p.hidden) return false;
+      const talk = currentTalk(p.actor, this.step?.id, this.flags);
+      return flagList(talk?.set).some((f) => missing.includes(f));
+    });
+  }
+
   private debugApi(): NovenaDebug {
     return {
       scene: this,
       state: () => ({
         step: this.step?.id ?? null,
         goal: this.step?.goal.type ?? null,
-        talkTo: this.step?.goal.type === "talk" ? this.step.goal.actor : null,
-        busy: this.busy || this.moving,
+        talkTo: this.talkTarget()?.actor.id ?? null,
+        flags: [...this.flags],
+        busy: this.busy || this.moving || this.justFreed(),
         done: this.done,
         player: [...this.playerTile],
         sheep: { penned: this.sheep.filter((s) => s.penned).length, total: this.sheep.length },
@@ -756,10 +817,18 @@ export class ChapterScene extends Phaser.Scene {
       completeStep: () => {
         const goal = this.step?.goal;
         if (!goal || this.busy || this.moving) return false;
-        if (goal.type === "talk") {
-          const person = this.people.get(goal.actor);
-          if (!person) return false;
-          void this.talkTo(person);
+        if (goal.type === "talk" || goal.type === "flags") {
+          const person = this.talkTarget();
+          if (person) {
+            void this.talkTo(person);
+            return true;
+          }
+          if (goal.type === "talk") return false;
+          // Nadie marca lo que falta hablando: se marcan de una vez.
+          void this.progress(async () => {
+            this.setFlags(goal.all, true);
+            await this.finishStep();
+          });
           return true;
         }
         if (goal.type === "reach") {

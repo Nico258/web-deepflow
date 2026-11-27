@@ -4,7 +4,8 @@
 // Ver docs/specs/07-novena-interactiva.md §3.
 
 import { DIRS, LETTERS, SOLID, inZone, same, toGrid } from "./map";
-import type { Action, Chapter, Tile, Zone } from "./types";
+import { flagList, talkCases } from "./rules";
+import type { Action, Chapter, Condition, Tile, Zone } from "./types";
 
 export type ChapterReport = {
   /** Lo que rompe el capítulo o lo deja trabado. Hay que corregirlo. */
@@ -39,6 +40,12 @@ export function validateChapter(chapter: Chapter): ChapterReport {
   const actors = new Map(chapter.actors.map((a) => [a.id, a]));
   const stepIds = new Set(chapter.steps.map((s) => s.id));
   const seenActors = new Set<string>();
+  /** Banderas que algo marca (acciones o casos de `talk`) y banderas que algo pide. */
+  const flagsSet = new Set<string>();
+  const flagsRead = new Map<string, string>();
+  const read = (flags: string[] | undefined, where: string) => flags?.forEach((f) => flagsRead.has(f) || flagsRead.set(f, where));
+  const stepAllows = (cond: Condition | undefined, step: string) =>
+    cond?.step === undefined || (Array.isArray(cond.step) ? cond.step : [cond.step]).includes(step);
   for (const a of chapter.actors) {
     const where = `Personaje «${a.id}»`;
     if (seenActors.has(a.id)) errors.push(`${where}: el id está repetido.`);
@@ -47,10 +54,23 @@ export function validateChapter(chapter: Chapter): ChapterReport {
     if (!inside(a.at)) errors.push(`${where}: la casilla ${fmt(a.at)} está fuera del mapa.`);
     else if (!a.floating && SOLID.has(letter(a.at))) errors.push(`${where}: está sobre una casilla que no se puede pisar (${fmt(a.at)}, «${letter(a.at)}»).`);
     if (!a.floating && same(a.at, chapter.player.at)) errors.push(`${where}: está en la misma casilla que el jugador.`);
-    for (const [key, dialog] of Object.entries(a.talk ?? {})) {
-      if (!chapter.dialogs[dialog]) errors.push(`${where}: en el paso «${key}» abre el diálogo «${dialog}», que no existe.`);
-      if (key !== "default" && !stepIds.has(key)) errors.push(`${where}: \`talk\` usa «${key}», que no es un paso ni «default».`);
-    }
+    if (Array.isArray(a.talk)) {
+      const cases = a.talk;
+      cases.forEach((c, i) => {
+        const what = `${where}, caso ${i + 1} de \`talk\``;
+        if (!chapter.dialogs[c.dialog]) errors.push(`${what}: abre el diálogo «${c.dialog}», que no existe.`);
+        const steps = c.when?.step === undefined ? [] : Array.isArray(c.when.step) ? c.when.step : [c.when.step];
+        for (const id of steps) if (!stepIds.has(id)) errors.push(`${what}: \`when.step\` usa «${id}», que no es un paso.`);
+        if (!c.when && i < cases.length - 1) warnings.push(`${what}: no tiene \`when\`, así que los casos que siguen nunca se usan.`);
+        read(c.when?.flags, what);
+        read(c.when?.not, what);
+        for (const f of [...flagList(c.set), ...flagList(c.unset)]) flagsSet.add(f);
+      });
+    } else
+      for (const [key, dialog] of Object.entries(a.talk ?? {})) {
+        if (!chapter.dialogs[dialog]) errors.push(`${where}: en el paso «${key}» abre el diálogo «${dialog}», que no existe.`);
+        if (key !== "default" && !stepIds.has(key)) errors.push(`${where}: \`talk\` usa «${key}», que no es un paso ni «default».`);
+      }
   }
   const solidActors = chapter.actors.filter((a) => !a.floating);
   solidActors.forEach((a, i) =>
@@ -100,7 +120,9 @@ export function validateChapter(chapter: Chapter): ChapterReport {
   const hidden = new Set(chapter.actors.filter((a) => a.hidden).map((a) => a.id));
   let gateClosed = false;
   const usedDialogs = new Set<string>();
-  for (const a of chapter.actors) for (const d of Object.values(a.talk ?? {})) usedDialogs.add(d);
+  for (const a of chapter.actors) for (const c of talkCases(a)) usedDialogs.add(c.dialog);
+  /** Banderas que ya están marcadas con seguridad al llegar a cada paso (por acciones, no por diálogos). */
+  const flagsNow = new Set<string>();
   if (herd?.helpDialog) usedDialogs.add(herd.helpDialog);
 
   const blocked = (t: Tile) =>
@@ -144,6 +166,14 @@ export function validateChapter(chapter: Chapter): ChapterReport {
             else hidden.add(id);
           }
           break;
+        case "set":
+        case "unset":
+          for (const f of flagList(a.flag)) {
+            flagsSet.add(f);
+            if (a.type === "set") flagsNow.add(f);
+            else flagsNow.delete(f);
+          }
+          break;
         case "pan":
           if (!inside(a.to)) errors.push(`${where}: \`pan\` va a ${fmt(a.to)}, fuera del mapa.`);
           break;
@@ -168,7 +198,8 @@ export function validateChapter(chapter: Chapter): ChapterReport {
       if (!actor) errors.push(`${where}: la meta habla con «${goal.actor}», que no existe.`);
       else {
         if (hidden.has(actor.id)) errors.push(`${where}: hay que hablar con «${actor.id}», pero está oculto en ese momento.`);
-        if (!actor.talk?.[step.id] && !actor.talk?.default) errors.push(`${where}: «${actor.id}» no tiene diálogo para este paso (ni \`default\`), así que no se puede cumplir.`);
+        if (!talkCases(actor).some((c) => stepAllows(c.when, step.id)))
+          errors.push(`${where}: «${actor.id}» no tiene diálogo para este paso (ni \`default\`), así que no se puede cumplir.`);
         const canReach = reachable();
         if (!DIRS.some(([dx, dy]) => canReach([actor.at[0] + dx, actor.at[1] + dy])))
           errors.push(`${where}: no hay forma de llegar al lado de «${actor.id}».`);
@@ -184,12 +215,30 @@ export function validateChapter(chapter: Chapter): ChapterReport {
       }
     } else if (goal.type === "herd") {
       gateClosed = true;
+    } else if (goal.type === "flags") {
+      if (!goal.all.length) errors.push(`${where}: la meta \`flags\` no pide ninguna bandera.`);
+      read(goal.all, where);
+      // Cada bandera que falta la tiene que poder marcar, en este paso, alguien visible y al alcance.
+      const canReach = reachable();
+      for (const f of goal.all) {
+        if (flagsNow.has(f)) continue;
+        const someone = chapter.actors.some(
+          (a) =>
+            !hidden.has(a.id) &&
+            DIRS.some(([dx, dy]) => canReach([a.at[0] + dx, a.at[1] + dy])) &&
+            talkCases(a).some((c) => stepAllows(c.when, step.id) && flagList(c.set).includes(f)),
+        );
+        if (!someone) errors.push(`${where}: la meta pide la bandera «${f}», pero en este paso nadie la marca al hablarle.`);
+      }
+      goal.all.forEach((f) => flagsNow.add(f));
     }
 
     runActions(step.onDone, `${where} (onDone)`);
   }
 
   for (const id of Object.keys(chapter.dialogs)) if (!usedDialogs.has(id)) warnings.push(`Diálogo «${id}»: nadie lo usa.`);
+  for (const [f, where] of flagsRead) if (!flagsSet.has(f)) errors.push(`${where}: usa la bandera «${f}», pero nada la marca (\`set\`). ¿Está bien escrita?`);
+  for (const f of flagsSet) if (!flagsRead.has(f)) warnings.push(`Bandera «${f}»: se marca, pero nada la usa (ni una meta \`flags\` ni un \`when\`).`);
 
   // ───────── Cierre ─────────
   const { verse, reference, reflection } = chapter.ending;

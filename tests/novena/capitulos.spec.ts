@@ -10,8 +10,9 @@ import { validateChapter } from "@/game/novena/validate";
 // 1. «El guion es válido»: corre el validador (sin navegador, en menos de un segundo).
 // 2. «Se juega de punta a punta»: abre el capítulo y lo recorre sin jugarlo de verdad.
 //    Cierra los diálogos al instante (con toques en el celular y con Enter en el computador),
-//    toca de verdad a la persona con quien hay que hablar y el resto de las metas las cumple
-//    con window.__novena.completeStep(): llega a la zona o mete las ovejas al corral de una vez.
+//    toca de verdad a la persona con quien hay que hablar (en `flags`, a quien marca una bandera
+//    que falta) y el resto de las metas las cumple con window.__novena.completeStep(): llega a la
+//    zona o mete las ovejas al corral de una vez.
 //    Termina cuando aparece el cierre con el versículo.
 //
 // Correr: `pnpm test:novena` (ver playwright.config.ts para elegir el navegador).

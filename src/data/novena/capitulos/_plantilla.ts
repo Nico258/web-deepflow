@@ -33,11 +33,29 @@ const chapter: Chapter = {
 
   player: { name: "Personaje", color: 0x3d6fb6, at: [3, 4] },
 
-  actors: [{ id: "vecino", name: "Vecino", at: [8, 2], color: 0x8a5a3c, talk: { default: "saludo" } }],
+  actors: [
+    // Forma simple de `talk`: qué diálogo abre según el paso (`default` para el resto).
+    { id: "vecino", name: "Vecino", at: [8, 2], color: 0x8a5a3c, talk: { default: "saludo" } },
+    // Forma por casos: se usa el primero que se cumpla. La primera vez marca la bandera
+    // «saludo-vecina»; después dice otra cosa.
+    {
+      id: "vecina",
+      name: "Vecina",
+      at: [11, 6],
+      color: 0xb0603a,
+      talk: [
+        { when: { not: ["saludo-vecina"] }, dialog: "vecina", set: "saludo-vecina" },
+        { dialog: "vecina-otra-vez" },
+      ],
+    },
+  ],
 
   steps: [
     { id: "intro", goal: { type: "auto" }, onStart: [{ type: "say", dialog: "intro" }] },
     { id: "hablar", objective: "Habla con el vecino", goal: { type: "talk", actor: "vecino" } },
+    // Meta `flags`: se cumple cuando están marcadas todas, en cualquier orden. Aquí hay una sola;
+    // con varias («toco-casa-1», «toco-casa-2»…), {n} y {total} muestran cuántas van.
+    { id: "saludar", objective: "Saluda a la vecina ({n}/{total})", goal: { type: "flags", all: ["saludo-vecina"] } },
     { id: "salir", objective: "Sal por el camino", goal: { type: "reach", zone: { x: 18, y: 4, w: 2, h: 1 } } },
   ],
 
@@ -47,6 +65,8 @@ const chapter: Chapter = {
       { who: "vecino", text: "¡Hola!" },
       { who: "player", text: "¡Hola!" },
     ],
+    vecina: [{ who: "vecina", text: "¡Qué gusto verte! Saluda a tu mamá de mi parte." }],
+    "vecina-otra-vez": [{ who: "vecina", text: "¿No se te olvida algo? Ah, no: ya me saludaste." }],
   },
 
   ending: {

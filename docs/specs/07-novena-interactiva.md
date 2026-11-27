@@ -86,10 +86,43 @@ Un capítulo tiene:
 | `talk` | Se habla con cierto personaje |
 | `reach` | El jugador llega a cierta zona del mapa |
 | `herd` | Todas las ovejas están en el corral y la puerta se cerró |
+| `flags` | Están marcadas todas las banderas de `all`, en cualquier orden (ver «Banderas») |
+
+En `herd` y `flags`, el `objective` puede llevar `{n}` y `{total}` para mostrar cuánto va: «Toca las puertas ({n}/{total})».
 
 ### Acciones (en `onStart` y `onDone`)
 
-`say` (abre un diálogo), `show` / `hide` (aparece o desaparece un personaje), `flash` (destello de luz), `lighting` (cambia la luz: `day`, `night`, `glory`), `pan` / `follow` (mueve la cámara a un punto y vuelve al jugador), `wait` (pausa) y `sfx` (efecto de sonido).
+`say` (abre un diálogo), `show` / `hide` (aparece o desaparece un personaje), `flash` (destello de luz), `lighting` (cambia la luz: `day`, `night`, `glory`), `pan` / `follow` (mueve la cámara a un punto y vuelve al jugador), `wait` (pausa), `sfx` (efecto de sonido) y `set` / `unset` (marca o desmarca banderas).
+
+### Banderas y diálogos según lo que pasó
+
+Una **bandera** es un nombre que el capítulo marca para recordar algo: «toco-casa-1», «tiene-pan», «hablo-con-el-posadero». Empiezan sin marcar y se olvidan al salir del capítulo. Se marcan con las acciones `set` / `unset` (una o varias: `{ type: "set", flag: ["a", "b"] }`) o al terminar un diálogo.
+
+`talk` de un personaje tiene dos formas:
+
+- **Simple**, como en el capítulo 8: `{ idDelPaso: "dialogo", default: "otro" }`, según el paso actual.
+- **Por casos**: una lista; se usa **el primer caso cuya condición se cumpla**. Cada caso tiene `dialog` y, si se quiere, `when` (la condición) y `set` / `unset` (banderas que se marcan o desmarcan al terminar ese diálogo). Un caso sin `when` sirve siempre, así que va al final.
+
+| `when` | Se cumple si… |
+|---|---|
+| `step` | El paso actual es este (o uno de una lista) |
+| `flags` | Están marcadas todas estas banderas |
+| `not` | No está marcada ninguna de estas |
+
+Ejemplo, tocar puertas en Belén (capítulo 7): cada posadero dice que no hay lugar y marca su bandera; si se le vuelve a tocar, dice otra cosa. El paso termina con la meta `flags` cuando se tocaron las tres, en cualquier orden.
+
+```ts
+// En actors:
+{ id: "posadero1", name: "Posadero", at: [10, 4], color: 0x8a5a3c, talk: [
+  { when: { not: ["toco-casa-1"] }, dialog: "no-hay-lugar-1", set: "toco-casa-1" },
+  { dialog: "ya-te-dije" },
+] },
+// En steps:
+{ id: "puertas", objective: "Busca dónde pasar la noche ({n}/{total})",
+  goal: { type: "flags", all: ["toco-casa-1", "toco-casa-2", "toco-casa-3"] } },
+```
+
+El validador avisa si una meta o un `when` usa una bandera que nada marca (casi siempre es un error de escritura), si una meta `flags` pide una bandera que en ese paso nadie puede marcar, o si se marca una bandera que nada usa. `_plantilla.ts` trae un ejemplo con las dos formas.
 
 ### Reunir ovejas (`herd`)
 
@@ -118,12 +151,12 @@ Para un momento jugable nuevo (cargar el burro, tocar puertas…), primero hay q
 
 > **Recomendado:** antes de subir cualquier cambio a un capítulo, al motor (`src/game/novena/`) o a la interfaz de la novena (`src/components/novena/`), corre `pnpm test:novena` y revisa que pase. No corre solo: ni `pnpm build` ni GitHub lo ejecutan, así que depende de quien hace el cambio (persona o agente). Si alguna prueba falla, el mensaje dice en qué capítulo y en qué paso.
 
-- **Empezar a medias:** en desarrollo (`pnpm dev`), `/novena?cap=8&paso=volver` abre el capítulo 8 directamente en ese paso. Los pasos anteriores se dan por hechos sin diálogos (las ovejas aparecen en el corral, los personajes ya mostrados aparecen). En producción no funciona.
+- **Empezar a medias:** en desarrollo (`pnpm dev`), `/novena?cap=8&paso=volver` abre el capítulo 8 directamente en ese paso. Los pasos anteriores se dan por hechos sin diálogos (las ovejas aparecen en el corral, los personajes ya mostrados aparecen, y quedan marcadas las banderas de sus acciones, de sus metas `flags` y de los diálogos de sus metas `talk`). `/novena?cap=plantilla` juega `_plantilla.ts` (sirve para probar el motor sin tocar un capítulo; no se guarda como completada). En producción no funciona.
 - **Validador** (`src/game/novena/validate.ts`): revisa el guion sin jugarlo. Encuentra lo que rompe el capítulo o lo deja trabado: un diálogo o personaje que no existe, una letra desconocida en el mapa, alguien parado sobre un árbol, hablar con alguien que está oculto o que no tiene diálogo para ese paso, una zona a la que no se puede llegar… También avisa de descuidos, como un diálogo que nadie usa o un paso sin objetivo. En desarrollo corre solo al abrir un capítulo y escribe en la consola del navegador.
-- **Pruebas automáticas** (`pnpm test:novena`, en `tests/novena/`): para **cada capítulo que tenga `load`** en `chapters.ts`, corren el validador y recorren el capítulo de punta a punta en escritorio y en celular (390 × 780, táctil). No se juega de verdad: los diálogos se cierran al instante, a quien hay que hablarle se le toca de verdad y las demás metas se cumplen de una vez (llegar a la zona, meter las ovejas al corral). Pasan si aparece el cierre con el versículo, se guarda el capítulo y no hay errores en la consola. Tardan unos 15 segundos por capítulo. **Al agregar un capítulo no hay que escribir pruebas nuevas.**
+- **Pruebas automáticas** (`pnpm test:novena`, en `tests/novena/`): para **cada capítulo que tenga `load`** en `chapters.ts`, corren el validador y recorren el capítulo de punta a punta en escritorio y en celular (390 × 780, táctil). No se juega de verdad: los diálogos se cierran al instante, a quien hay que hablarle se le toca de verdad (en `flags`, a quien marca una bandera que falta) y las demás metas se cumplen de una vez (llegar a la zona, meter las ovejas al corral). Pasan si aparece el cierre con el versículo, se guarda el capítulo y no hay errores en la consola. Tardan unos 15 segundos por capítulo. **Al agregar un capítulo no hay que escribir pruebas nuevas.**
   - La primera vez hay que instalar un navegador para las pruebas: `pnpm exec playwright install chromium`. Si se prefiere usar uno ya instalado, sin descargar nada: `PW_CHANNEL=msedge pnpm test:novena` (Edge) o `PW_CHANNEL=chrome`.
   - Si ya hay un `pnpm dev` abierto en el puerto 3000, las pruebas lo usan; si no, lo abren solas.
-- **Consola:** en desarrollo, `window.__novena` tiene herramientas de depuración: `state()` (paso actual, meta, posición), `completeStep()` (cumple la meta actual), `teleport([x, y])`, `actorTile(id)` y `scene` (la escena de Phaser). Las pruebas usan solo estas funciones; si el motor cambia, se ajustan ahí (`NovenaDebug` en `chapter-scene.ts`).
+- **Consola:** en desarrollo, `window.__novena` tiene herramientas de depuración: `state()` (paso actual, meta, posición, banderas marcadas), `completeStep()` (cumple la meta actual), `teleport([x, y])`, `actorTile(id)` y `scene` (la escena de Phaser). Las pruebas usan solo estas funciones; si el motor cambia, se ajustan ahí (`NovenaDebug` en `chapter-scene.ts`).
 
 ### Escribir un capítulo nuevo (el estándar)
 
@@ -160,7 +193,6 @@ Así se arman los capítulos 1 a 7, 9 y ★ mientras el capítulo 8 se sigue pul
 
 Está en el plan (§7) y llegará sin romper los capítulos ya escritos, porque son campos opcionales nuevos. Mientras tanto, se arma el capítulo en línea recta con lo que hay:
 
-- Recordar decisiones o cosas hechas (banderas) y diálogos que cambian según eso.
 - Elegir entre respuestas en un diálogo.
 - Objetos para recoger o usar.
 - Personajes que caminan solos o que acompañan al jugador.

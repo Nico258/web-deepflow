@@ -11,6 +11,22 @@ const main = chapters.filter((c) => !c.bonus);
 
 type Playing = { info: ChapterInfo; chapter: Chapter; startAt?: string };
 
+/** Solo en desarrollo: /novena?cap=plantilla juega `_plantilla.ts`, sin guardarla como completada. */
+const PLANTILLA: ChapterInfo | undefined =
+  process.env.NODE_ENV === "production"
+    ? undefined
+    : {
+        number: 0,
+        slug: "plantilla",
+        title: "Plantilla",
+        place: "Prueba",
+        playAs: "Personaje",
+        passage: "—",
+        summary: "La plantilla de capítulos, para probar el motor.",
+        mapAt: { x: 0, y: 0 },
+        load: () => import("@/data/novena/capitulos/_plantilla").then((m) => m.default),
+      };
+
 // Mapa de capítulos y, al elegir uno, el juego a pantalla completa.
 // Nada se bloquea: la estrella solo marca el primer capítulo sin completar.
 export function NovenaApp() {
@@ -43,11 +59,12 @@ export function NovenaApp() {
     }
   }, []);
 
-  // Atajo de desarrollo (spec 07 §3): /novena?cap=8&paso=volver
+  // Atajo de desarrollo (spec 07 §3): /novena?cap=8&paso=volver, o ?cap=plantilla
   useEffect(() => {
     if (process.env.NODE_ENV === "production") return;
     const params = new URLSearchParams(window.location.search);
-    const info = chapters.find((c) => String(c.number) === params.get("cap"));
+    const cap = params.get("cap");
+    const info = cap === "plantilla" ? PLANTILLA : chapters.find((c) => String(c.number) === cap);
     if (!info) return;
     const timer = window.setTimeout(() => void play(info, params.get("paso") ?? undefined), 0);
     return () => window.clearTimeout(timer);
@@ -60,15 +77,16 @@ export function NovenaApp() {
 
   if (playing) {
     const i = chapters.indexOf(playing.info);
+    const isTemplate = playing.info === PLANTILLA;
     return (
       <GameView
         key={playing.info.slug}
         info={playing.info}
         chapter={playing.chapter}
         startAt={playing.startAt}
-        next={chapters[i + 1]}
+        next={isTemplate ? undefined : chapters[i + 1]}
         onExit={() => setPlaying(null)}
-        onComplete={complete}
+        onComplete={isTemplate ? () => {} : complete}
         onPlay={(info) => void play(info)}
       />
     );
