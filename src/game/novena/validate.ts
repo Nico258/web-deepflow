@@ -130,6 +130,18 @@ export function validateChapter(chapter: Chapter): ChapterReport {
       }
     });
 
+  // ───────── Lo que se lleva ─────────
+  const itemFlags = new Set<string>();
+  (chapter.items ?? []).forEach((item, i) => {
+    const where = `Objeto que se lleva ${i + 1} (\`items\`)`;
+    if (!item.name.trim()) errors.push(`${where}: no tiene nombre.`);
+    if (!item.flag.trim()) errors.push(`${where}: no tiene bandera.`);
+    else if (itemFlags.has(item.flag)) errors.push(`${where}: la bandera «${item.flag}» ya es de otro objeto.`);
+    itemFlags.add(item.flag);
+    read([item.flag], `${where}, «${item.name}»`);
+    if (!item.hint?.trim()) warnings.push(`${where}, «${item.name}»: no tiene \`hint\`; al tocarlo no dirá para qué sirve.`);
+  });
+
   // ───────── Ovejas ─────────
   const herd = chapter.herd;
   const hasHerdStep = chapter.steps.some((s) => s.goal.type === "herd");
@@ -346,7 +358,7 @@ export function validateChapter(chapter: Chapter): ChapterReport {
   for (const id of [...usedDialogs]) for (const d of dialogChain(chapter.dialogs, id)) usedDialogs.add(d);
   for (const id of Object.keys(chapter.dialogs)) if (!usedDialogs.has(id)) warnings.push(`Diálogo «${id}»: nadie lo usa.`);
   for (const [f, where] of flagsRead) if (!flagsSet.has(f)) errors.push(`${where}: usa la bandera «${f}», pero nada la marca (\`set\`). ¿Está bien escrita?`);
-  for (const f of flagsSet) if (!flagsRead.has(f)) warnings.push(`Bandera «${f}»: se marca, pero nada la usa (ni una meta \`flags\` ni un \`when\`).`);
+  for (const f of flagsSet) if (!flagsRead.has(f)) warnings.push(`Bandera «${f}»: se marca, pero nada la usa (ni una meta \`flags\`, ni un \`when\`, ni un objeto de \`items\`).`);
 
   // ───────── Cierre ─────────
   const { verse, reference, reflection } = chapter.ending;

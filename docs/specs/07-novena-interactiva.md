@@ -56,6 +56,7 @@ El capítulo ★ entra, pero **con prioridad baja y al final**.
   - En el computador: flechas o WASD para caminar, y Espacio, Enter o E para hablar.
 - **Movimiento por casillas** de 16 px. Es más simple de programar y de diseñar, y basta para este juego.
 - **Zoom entero** según la pantalla (×2 en el celular, ×3 o más en el computador), para que el pixel art se vea nítido.
+- **Nada queda debajo de la barra y el objetivo de arriba.** React le avisa al juego cuánto ocupan, y la cámara deja ese espacio libre: cerca del borde superior del mapa se ve una franja oscura en vez de esconder al jugador o las primeras filas del mapa.
 
 ### Recomendado
 
@@ -71,6 +72,7 @@ Un capítulo tiene:
 | Parte | Qué es |
 |---|---|
 | `map` | El mapa principal como filas de texto (§4), si es de día o de noche y sus salidas |
+| `items` | (Opcional) lo que se puede llevar, que se ve arriba mientras se tiene (ver «Objetos») |
 | `maps` | (Opcional) otros mapas: el interior de una casa, otra parte del camino (ver «Varios mapas») |
 | `player` | Nombre, color y casilla de inicio del personaje que se maneja |
 | `actors` | Las demás personas (y ángeles, animales que hablan…) y los objetos: casilla, color, si empiezan ocultos y qué dicen en cada paso |
@@ -162,6 +164,12 @@ Un personaje con `kind: "object"` es una cosa del mapa: un cántaro, una canasta
 
 No hay inventario (§9): **tener algo es una bandera**. Recoger es marcarla y ocultar el objeto; usarlo es un caso de `talk` que pide esa bandera.
 
+Para que se note lo que se lleva, el capítulo lo declara en `items`: mientras la bandera esté marcada, el objeto se ve como un ícono arriba a la derecha. Al tocarlo aparece su nombre y `hint`, que recuerda para qué sirve. Es solo informativo: no se abre nada ni se usa desde ahí. Al desmarcar la bandera (por ejemplo, al entregarlo), desaparece.
+
+```ts
+items: [{ flag: "tiene-pan", name: "Pan", color: 0xc9a25a, hint: "Para cargarlo en el burro." }],
+```
+
 ```ts
 // Recoger: marca la bandera y desaparece.
 { id: "pan", name: "Pan", kind: "object", at: [12, 5], color: 0xc9a25a, talk: [
@@ -190,6 +198,8 @@ Ejemplo, el nombre del niño (capítulo 3):
 ],
 "no-ese-no": [{ who: "narrator", text: "Zacarías borra la tablilla. Eso no fue lo que dijo el ángel." }],
 ```
+
+Una pregunta se repite cada vez que se abre su diálogo. Si no debe repetirse, el personaje dice otra cosa después: en la forma simple, la pregunta va solo en su paso y `default` dice otra cosa (como el vecino de `_plantilla.ts`); por casos, un caso con `not` sobre la bandera de la respuesta.
 
 La elección se combina con lo demás: una meta `flags` se cumple si una respuesta marca su bandera, y un caso de `talk` o una acción con `when` dicen otra cosa según lo elegido. En el celular se toca la respuesta; en el computador se elige con las flechas y Enter, o con su número.
 

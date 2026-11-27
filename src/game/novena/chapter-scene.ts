@@ -152,6 +152,10 @@ export class ChapterScene extends Phaser.Scene {
   private party: Person[] = [];
   /** Zoom respecto del normal (acción `zoom`). */
   private zoomFactor = 1;
+  /** Cuánto ocupa arriba la interfaz de React (barra y objetivo), en píxeles de pantalla. */
+  private topInset = 0;
+  /** Lo último que se avisó de lo que lleva el jugador, para no repetir. */
+  private itemsKey = "";
 
   private keys!: Record<"up" | "down" | "left" | "right" | "w" | "a" | "s" | "d", Phaser.Input.Keyboard.Key>;
 
@@ -222,6 +226,12 @@ export class ChapterScene extends Phaser.Scene {
       this.idleSince = this.time.now;
     });
     this.events.once(Phaser.Scenes.Events.DESTROY, offPause);
+    // La barra y el objetivo de arriba tapan el mapa: la cámara deja ese espacio libre.
+    const offInset = this.bus.on("hudInset", (px) => {
+      this.topInset = px;
+      this.fitBounds();
+    });
+    this.events.once(Phaser.Scenes.Events.DESTROY, offInset);
 
     // Para depurar desde la consola del navegador y para las pruebas: window.__novena
     if (process.env.NODE_ENV !== "production") {
@@ -259,14 +269,19 @@ export class ChapterScene extends Phaser.Scene {
     return Math.max(2, Math.floor(Math.min(width, height) / (TILE * 14)));
   }
 
-  /** Límites de la cámara: el mapa; si el mapa es más chico que la pantalla (una casa), queda centrado. */
+  /**
+   * Límites de la cámara: el mapa, más un margen arriba del alto de la barra y el objetivo, para que
+   * ni el jugador ni lo que está en el borde de arriba del mapa queden debajo. Si el mapa es más
+   * chico que la pantalla (una casa), queda centrado en el espacio libre.
+   */
   private fitBounds(zoom = this.cameras.main.zoom) {
     const cam = this.cameras.main;
     const mapW = (this.grid[0]?.length ?? 0) * TILE;
     const mapH = this.grid.length * TILE;
+    const top = this.topInset / zoom;
     const w = Math.max(mapW, cam.width / zoom);
-    const h = Math.max(mapH, cam.height / zoom);
-    cam.setBounds((mapW - w) / 2, (mapH - h) / 2, w, h);
+    const h = Math.max(mapH + top, cam.height / zoom);
+    cam.setBounds((mapW - w) / 2, -top + (mapH + top - h) / 2, w, h);
   }
 
   /** Arma lo que depende del mapa actual: suelo, luz, fogatas, cámara y quién se ve. */
@@ -566,6 +581,19 @@ export class ChapterScene extends Phaser.Scene {
       else this.flags.delete(f);
     }
     if (this.step?.goal.type === "flags") this.showObjective();
+    this.showItems();
+  }
+
+  /** Le avisa a React qué lleva el jugador (los `items` con su bandera marcada), si cambió. */
+  private showItems() {
+    const carried = (this.chapter.items ?? []).filter((i) => this.flags.has(i.flag));
+    const key = carried.map((i) => i.flag).join("|");
+    if (key === this.itemsKey) return;
+    this.itemsKey = key;
+    this.bus.emit(
+      "items",
+      carried.map(({ name, color, hint }) => ({ name, color, hint })),
+    );
   }
 
   /** Si la meta del paso es `flags` y ya están todas marcadas. */
@@ -869,7 +897,7 @@ export class ChapterScene extends Phaser.Scene {
     const cam = this.cameras.main;
     const view = cam.worldView;
     // Márgenes en píxeles de pantalla, pasados al mundo: arriba se deja lugar a la barra y al objetivo.
-    const top = 120 / cam.zoom;
+    const top = (Math.max(this.topInset, 60) + 12) / cam.zoom;
     const side = 18 / cam.zoom;
     this.sheep.forEach((s, i) => {
       const arrow = this.sheepArrows[i];

@@ -163,6 +163,13 @@ export type HerdConfig = {
   helpDialog?: string;
 };
 
+/**
+ * Algo que el jugador lleva (la canasta, el pan). Se ve arriba a la derecha mientras su bandera
+ * esté marcada; al tocarlo se lee `hint`, para recordar para qué sirve. No es un inventario: no se
+ * usa desde ahí, solo informa.
+ */
+export type Item = { flag: string; name: string; color: number; hint?: string };
+
 export type Chapter = {
   /** El mapa principal, donde empieza el jugador (su id es "main"). Las ovejas van aquí. */
   map: GameMap;
@@ -173,6 +180,8 @@ export type Chapter = {
   dialogs: Record<string, Line[]>;
   steps: Step[];
   herd?: HerdConfig;
+  /** Lo que se puede llevar (ver `Item`). */
+  items?: Item[];
   ending: { verse: string; reference: string; reflection: string };
 };
 

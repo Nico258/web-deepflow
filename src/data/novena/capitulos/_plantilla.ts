@@ -52,8 +52,9 @@ const chapter: Chapter = {
   player: { name: "Personaje", color: 0x3d6fb6, at: [3, 4] },
 
   actors: [
-    // Forma simple de `talk`: qué diálogo abre según el paso (`default` para el resto).
-    { id: "vecino", name: "Vecino", at: [8, 2], color: 0x8a5a3c, talk: { default: "saludo" } },
+    // Forma simple de `talk`: qué diálogo abre según el paso (`default` para el resto). La pregunta
+    // de «saludo» se hace solo en el paso «hablar»; después dice otra cosa, para no repetirla.
+    { id: "vecino", name: "Vecino", at: [8, 2], color: 0x8a5a3c, talk: { hablar: "saludo", default: "vecino-camino" } },
     // Forma por casos: se usa el primero que se cumpla. La primera vez marca la bandera
     // «saludo-vecina»; después dice otra cosa.
     {
@@ -79,6 +80,10 @@ const chapter: Chapter = {
     },
     { id: "mesa", name: "Mesa", kind: "object", at: [6, 2], color: 0x7a5230 },
   ],
+
+  // Lo que se lleva: mientras su bandera esté marcada, se ve arriba a la derecha. Al tocarlo,
+  // `hint` recuerda para qué sirve.
+  items: [{ flag: "tiene-canasta", name: "Canasta", color: 0xc9a25a, hint: "Pan para la fiesta de esta noche." }],
 
   steps: [
     { id: "intro", goal: { type: "auto" }, onStart: [{ type: "say", dialog: "intro" }] },
@@ -128,6 +133,7 @@ const chapter: Chapter = {
     ],
     "fiesta-si": [{ who: "vecino", text: "¡Qué bien! Te guardo un pan." }],
     "fiesta-no": [{ who: "vecino", text: "Bueno, otro día será." }],
+    "vecino-camino": [{ who: "vecino", text: "¡Vamos, que se hace tarde!" }],
     "camino-a-la-fiesta": [{ who: "narrator", text: "Y ahora, a la fiesta." }],
     vecina: [{ who: "vecina", text: "¡Qué gusto verte! Saluda a tu mamá de mi parte." }],
     canasta: [{ who: "narrator", text: "Recoges la canasta. Huele a pan recién hecho." }],

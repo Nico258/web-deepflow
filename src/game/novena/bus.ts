@@ -4,6 +4,9 @@
 /** `choices`: textos de las respuestas, solo en la última línea si el diálogo termina en una elección. */
 export type ResolvedLine = { speaker: string | null; text: string; color: number | null; choices?: string[] };
 
+/** Un objeto que lleva el jugador, para mostrarlo arriba (ver `Item` en types.ts). */
+export type CarriedItem = { name: string; color: number; hint?: string };
+
 type Events = {
   /**
    * Abre un diálogo. React responde con `dialogDone` al cerrar la última línea: con el número
@@ -17,6 +20,13 @@ type Events = {
   complete: void;
   /** React pide pausar (true) o seguir (false) mientras muestra una ventana encima del juego. */
   pause: boolean;
+  /** Lo que lleva el jugador ahora. */
+  items: CarriedItem[];
+  /**
+   * React avisa cuánto ocupa arriba la interfaz (barra y objetivo), en píxeles de pantalla.
+   * El juego no deja que el jugador ni el borde del mapa queden debajo.
+   */
+  hudInset: number;
 };
 
 type Handler<T> = (payload: T) => void;
