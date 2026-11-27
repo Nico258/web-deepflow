@@ -12,8 +12,11 @@ import type { Chapter } from "@/game/novena/types";
 //    revisa el guion y lo recorre de punta a punta en escritorio y en celular. No corre solo
 //    con el build, y no hay que escribir pruebas nuevas (spec 07 §3).
 //
-// El capítulo 8 (08-pastores.ts) es el ejemplo completo. El estándar (forma, tono, citas NTV y
-// lo que el motor todavía no tiene) está en la spec 07 §3, «Escribir un capítulo nuevo».
+// Esta plantilla trae un ejemplo de cada pieza del motor (banderas, elecciones, objetos, una casa
+// con su puerta, un acompañante, pistas…) y se juega en /novena?cap=plantilla. Al copiarla, borra
+// lo que no uses. El capítulo 8 (08-pastores.ts) es un capítulo real completo. El estándar (forma,
+// tono, citas NTV) y la tabla «¿Qué necesito para…?» están en la spec 07 §3; el formato, campo por
+// campo, en src/game/novena/types.ts.
 
 const chapter: Chapter = {
   map: {

@@ -75,19 +75,38 @@ El capítulo ★ entra, pero **con prioridad baja y al final**.
 
 ## 3. Cómo funciona un capítulo
 
-Un capítulo es **un archivo de datos**, sin lógica de juego: `src/data/novena/capitulos/08-pastores.ts` es el ejemplo completo y `_plantilla.ts` el punto de partida. El motor (`src/game/novena/chapter-scene.ts`) es el mismo para todos.
+Un capítulo es **un archivo de datos**, sin lógica de juego. El motor (`src/game/novena/chapter-scene.ts`) es el mismo para todos, y el formato completo, con un comentario en cada campo, está en `src/game/novena/types.ts`.
+
+- `_plantilla.ts` es el punto de partida y trae **un ejemplo de cada pieza** del motor. Se juega en `/novena?cap=plantilla` (en desarrollo), así se ve cómo funciona cada una antes de usarla.
+- `08-pastores.ts` es un capítulo real completo.
+
+**¿Qué necesito para…?**
+
+| Para… | Se usa | Dónde se explica |
+|---|---|---|
+| Hablar con alguien para avanzar | Meta `talk` | «Metas de un paso» |
+| Llegar a un lugar | Meta `reach` | «Metas de un paso» |
+| Hacer varias cosas en cualquier orden (tocar tres puertas) | Banderas y meta `flags` | «Banderas» |
+| Que alguien diga otra cosa según lo que pasó | `talk` por casos con `when` | «Banderas» |
+| Elegir una respuesta | `choices` en la última línea de un diálogo | «Elegir una respuesta» |
+| Recoger o usar una cosa | `kind: "object"`, `do` e `items` | «Objetos» |
+| Entrar a una casa, pasar a otra parte | `maps`, `exits` y `travel` | «Varios mapas» |
+| Que alguien camine, acompañe o la cámara se acerque | `move`, `join` / `leave` y `zoom` | «Acciones» |
+| Una escena (luz, destello, ángeles que aparecen) | Acciones en `onStart` / `onDone` | «Acciones» |
+| Reunir animales | Meta `herd` | «Reunir ovejas» |
+| Ayudar a quien se traba | `hint` en el paso (el «!» sale solo) | «Escribir un capítulo nuevo» |
 
 Un capítulo tiene:
 
 | Parte | Qué es |
 |---|---|
 | `map` | El mapa principal como filas de texto (§4), si es de día o de noche y sus salidas |
-| `items` | (Opcional) lo que se puede llevar, que se ve arriba mientras se tiene (ver «Objetos») |
 | `maps` | (Opcional) otros mapas: el interior de una casa, otra parte del camino (ver «Varios mapas») |
 | `player` | Nombre, color y casilla de inicio del personaje que se maneja |
 | `actors` | Las demás personas (y ángeles, animales que hablan…) y los objetos: casilla, color, si empiezan ocultos y qué dicen en cada paso |
 | `dialogs` | Todas las conversaciones, cada una como una lista de líneas `{ who, text }` |
 | `steps` | **Los pasos del capítulo, en orden.** Cada paso tiene un objetivo visible (`objective`), una meta (`goal`) y, si puede trabar, una pista (`hint`) |
+| `items` | (Opcional) lo que se puede llevar: se ve a la derecha, debajo del objetivo, mientras se tiene (ver «Objetos») |
 | `herd` | (Opcional) la configuración del minijuego de reunir ovejas |
 | `ending` | Versículo, referencia y pregunta del cierre |
 
@@ -111,7 +130,7 @@ Para que la escena se mueva:
 
 | Acción | Qué hace |
 |---|---|
-| `move` | Un personaje (o `"player"`) camina hasta una casilla de su mapa y se espera a que llegue: `{ type: "move", actor: "posadero", to: [12, 6] }`. `ms` es lo que tarda cada paso (por defecto 220). Los que flotan van en línea recta |
+| `move` | Un personaje (o `"player"`) camina hasta una casilla de su mapa y se espera a que llegue: `{ type: "move", actor: "posadero", to: [12, 6] }`. `ms` es lo que tarda cada paso (por defecto 220). Los que flotan van en línea recta. Si estaba acompañando al jugador, deja de hacerlo |
 | `join` / `leave` | Alguien empieza o deja de **acompañar** al jugador: camina detrás de él, no le tapa el paso y pasa con él a otros mapas (María con José, el burro). Se le puede hablar como siempre |
 | `zoom` | Acerca (más de 1) o aleja (menos de 1) la cámara respecto de lo normal; `1` la deja como estaba. Por ejemplo, `{ type: "zoom", to: 0.5, ms: 1200 }` para ver el cielo lleno de ángeles |
 
@@ -119,12 +138,12 @@ Cualquier acción puede llevar `when` (la misma condición de «Banderas», más
 
 ### Banderas y diálogos según lo que pasó
 
-Una **bandera** es un nombre que el capítulo marca para recordar algo: «toco-casa-1», «tiene-pan», «hablo-con-el-posadero». Empiezan sin marcar y se olvidan al salir del capítulo. Se marcan con las acciones `set` / `unset` (una o varias: `{ type: "set", flag: ["a", "b"] }`) o al terminar un diálogo.
+Una **bandera** es un nombre que el capítulo marca para recordar algo: «toco-casa-1», «tiene-pan», «hablo-con-el-posadero». Empiezan sin marcar y se olvidan al salir del capítulo. Se marcan con las acciones `set` / `unset` (una o varias: `{ type: "set", flag: ["a", "b"] }`), al terminar un diálogo (`set` en un caso de `talk`) o al elegir una respuesta.
 
 `talk` de un personaje tiene dos formas:
 
 - **Simple**, como en el capítulo 8: `{ idDelPaso: "dialogo", default: "otro" }`, según el paso actual.
-- **Por casos**: una lista; se usa **el primer caso cuya condición se cumpla**. Cada caso tiene `dialog` y, si se quiere, `when` (la condición), `set` / `unset` (banderas que se marcan o desmarcan al terminar ese diálogo) y `do` (acciones que se hacen después, como `hide`). Un caso sin `when` sirve siempre, así que va al final.
+- **Por casos**: una lista; se usa **el primer caso cuya condición se cumpla**. Cada caso tiene `dialog` y, si se quiere, `when` (la condición), `set` / `unset` (banderas que se marcan o desmarcan al terminar ese diálogo) y `do` (acciones que se hacen después, como `hide`). Por eso el orden importa: **primero los casos más específicos** (los que piden banderas) y al final uno sin `when`, que sirve siempre.
 
 | `when` | Se cumple si… |
 |---|---|
@@ -144,6 +163,14 @@ Ejemplo, tocar puertas en Belén (capítulo 7): cada posadero dice que no hay lu
 { id: "puertas", objective: "Busca dónde pasar la noche ({n}/{total})",
   goal: { type: "flags", all: ["toco-casa-1", "toco-casa-2", "toco-casa-3"] } },
 ```
+
+El validador avisa:
+- si una meta o un `when` usa una bandera que nada marca (casi siempre es un error de escritura);
+- si una meta `flags` pide una bandera que en ese paso nadie a quien se pueda llegar marca;
+- si se marca una bandera que nada usa;
+- si un caso de `talk` nunca se usa porque otro anterior vale en los mismos pasos.
+
+`_plantilla.ts` trae las dos formas: el vecino (simple) y la vecina (por casos).
 
 ### Varios mapas
 
@@ -166,7 +193,7 @@ maps: {
 },
 ```
 
-El validador sigue las salidas para saber a qué se puede llegar, y avisa si una lleva a un mapa que no existe o a una casilla que no se puede pisar.
+El validador sigue las salidas para saber a qué se puede llegar. Avisa si una lleva a un mapa que no existe o a una casilla que no se puede pisar, si se llega justo encima de otra salida o si tiene `closed` sin `when`. Ningún mapa de `maps` puede llamarse `main`.
 
 ### Objetos
 
@@ -213,7 +240,7 @@ Una pregunta se repite cada vez que se abre su diálogo. Si no debe repetirse, e
 
 La elección se combina con lo demás: una meta `flags` se cumple si una respuesta marca su bandera, y un caso de `talk` o una acción con `when` dicen otra cosa según lo elegido. En el celular se toca la respuesta; en el computador se elige con las flechas y Enter, o con su número.
 
-El validador avisa si una meta o un `when` usa una bandera que nada marca (casi siempre es un error de escritura), si una meta `flags` pide una bandera que en ese paso nadie puede marcar, o si se marca una bandera que nada usa. `_plantilla.ts` trae un ejemplo con las dos formas.
+Cuidado con los bucles: si **todas** las respuestas vuelven a preguntar, no hay forma de salir del diálogo. Siempre tiene que haber al menos una que siga.
 
 ### Reunir ovejas (`herd`)
 
@@ -242,8 +269,8 @@ Para un momento jugable nuevo (cargar el burro, tocar puertas…), primero hay q
 
 > **Recomendado:** antes de subir cualquier cambio a un capítulo, al motor (`src/game/novena/`) o a la interfaz de la novena (`src/components/novena/`), corre `pnpm test:novena` y revisa que pase. No corre solo: ni `pnpm build` ni GitHub lo ejecutan, así que depende de quien hace el cambio (persona o agente). Si alguna prueba falla, el mensaje dice en qué capítulo y en qué paso.
 
-- **Empezar a medias:** en desarrollo (`pnpm dev`), `/novena?cap=8&paso=volver` abre el capítulo 8 directamente en ese paso. Los pasos anteriores se dan por hechos sin diálogos (las ovejas aparecen en el corral, los personajes ya mostrados aparecen, quedan marcadas las banderas de sus acciones, de sus metas `flags` y de los diálogos de sus metas `talk`, y si la última meta era en otro mapa, el jugador empieza allá). `/novena?cap=plantilla` juega `_plantilla.ts` (sirve para probar el motor sin tocar un capítulo; no se guarda como completada). En producción no funciona.
-- **Validador** (`src/game/novena/validate.ts`): revisa el guion sin jugarlo. Encuentra lo que rompe el capítulo o lo deja trabado: un diálogo o personaje que no existe, una letra desconocida en el mapa, alguien parado sobre un árbol, hablar con alguien que está oculto o que no tiene diálogo para ese paso, una zona a la que no se puede llegar… También avisa de descuidos, como un diálogo que nadie usa o un paso sin objetivo. En desarrollo corre solo al abrir un capítulo y escribe en la consola del navegador.
+- **Empezar a medias:** en desarrollo (`pnpm dev`), `/novena?cap=8&paso=volver` abre el capítulo 8 directamente en ese paso. Los pasos anteriores se dan por hechos sin diálogos (las ovejas aparecen en el corral, los personajes ya mostrados aparecen, quedan marcadas las banderas de sus acciones, de sus metas `flags` y de los diálogos de sus metas `talk`, y si una meta era en otro mapa, el jugador queda allá). Las respuestas elegidas no se pueden adivinar, así que **sus banderas no se marcan**: si un paso depende de una respuesta, hay que empezar antes y elegirla. `/novena?cap=plantilla` juega `_plantilla.ts` (sirve para probar el motor sin tocar un capítulo; no se guarda como completada). En producción no funciona.
+- **Validador** (`src/game/novena/validate.ts`): revisa el guion sin jugarlo. Encuentra lo que rompe el capítulo o lo deja trabado: un diálogo o personaje que no existe, una letra desconocida en el mapa, alguien parado sobre un árbol, hablar con alguien que está oculto o que no tiene diálogo para ese paso, una zona a la que no se puede llegar, una bandera mal escrita, una salida a un mapa que no existe, un objeto de `items` repetido… También avisa de descuidos, como un diálogo que nadie usa, un paso sin objetivo, un caso de `talk` tapado por otro o una pista en un paso `auto`. En desarrollo corre solo al abrir un capítulo y escribe en la consola del navegador.
 - **Pruebas automáticas** (`pnpm test:novena`, en `tests/novena/`): para **cada capítulo que tenga `load`** en `chapters.ts`, corren el validador y recorren el capítulo de punta a punta en escritorio y en celular (390 × 780, táctil). No se juega de verdad: los diálogos se cierran al instante, a quien hay que hablarle se le toca de verdad (en `flags`, a quien marca una bandera que falta, al hablarle o con una respuesta), las respuestas se van probando en orden (si una vuelve a preguntar, la siguiente vez elige otra) y las demás metas se cumplen de una vez (llegar a la zona, meter las ovejas al corral). Pasan si aparece el cierre con el versículo, se guarda el capítulo y no hay errores en la consola. Tardan unos 15 segundos por capítulo. **Al agregar un capítulo no hay que escribir pruebas nuevas.**
   - La primera vez hay que instalar un navegador para las pruebas: `pnpm exec playwright install chromium`. Si se prefiere usar uno ya instalado, sin descargar nada: `PW_CHANNEL=msedge pnpm test:novena` (Edge) o `PW_CHANNEL=chrome`.
   - Si ya hay un `pnpm dev` abierto en el puerto 3000, las pruebas lo usan; si no, lo abren solas.
@@ -256,7 +283,7 @@ Así se arman los capítulos 1 a 7, 9 y ★ mientras el capítulo 8 se sigue pul
 **Cómo trabajar**
 
 - Una rama y un PR por capítulo, desde `main` (por ejemplo `feature/novena-cap-2`). El PR toca solo `src/data/novena/capitulos/NN-nombre.ts` y el `load` en `chapters.ts`.
-- Se parte de `_plantilla.ts` y se mira `08-pastores.ts` como ejemplo completo.
+- Se parte de `_plantilla.ts` (con un ejemplo de cada pieza, que se juega en `/novena?cap=plantilla`) y se mira `08-pastores.ts` como capítulo completo.
 - Si un momento jugable no se puede armar con las metas y acciones que existen, **no se fuerza el motor dentro del capítulo**: se arma una versión simple con lo que hay y se pide la pieza nueva aparte, para que la agregue quien lleva el motor y quede para todos.
 - Antes de pedir revisión: el validador sin errores en la consola y `pnpm test:novena` pasando.
 
@@ -265,7 +292,7 @@ Así se arman los capítulos 1 a 7, 9 y ★ mientras el capítulo 8 se sigue pul
 - **Unos 5 minutos** jugando sin apuro. Como medida, el capítulo 8 tiene 5 pasos y unas 40 líneas de diálogo.
 - Un orden que funciona: un paso `auto` de introducción (dónde estamos, quién soy, qué pasa), 3 o 4 pasos con metas, **un momento especial** y el cierre.
 - Cada paso con meta tiene un `objective` corto en imperativo («Habla con Rubén», «Lleva las ovejas al corral»). Nadie debería quedarse sin saber qué hacer.
-- Y una `hint` que ayude a quien se trabó sin resolverlo del todo: dónde buscar o cómo se hace («Rubén está junto a la fogata, en el centro del campamento»). Se ve desde el menú y sola pasado un minuto.
+- Y una `hint` que ayude a quien se trabó sin resolverlo del todo: dónde buscar o cómo se hace («Rubén está junto a la fogata, en el centro del campamento»). Se ve desde el menú y sola pasado un minuto. No hace falta decir con quién hablar: el «!» ya lo marca solo.
 - El mapa, pequeño: lo justo para el capítulo (el del 8 es de 40 × 26 casillas). Mejor pocos lugares con algo que hacer que mucho mapa vacío.
 
 **Diálogos**
@@ -341,11 +368,11 @@ Las filas pueden tener distinto largo: el motor completa con `#`. Los personajes
 
 ## 7. Plan de trabajo
 
-Programa una persona. El primer capítulo (el 8) queda como **molde** para que otra persona replique el resto.
+El primer capítulo (el 8) queda como **molde**: quien lleva el motor lo pule y suma las piezas que faltan, y otras dos personas escriben el resto de los capítulos siguiendo el estándar de §3.
 
 | Fase | Fecha objetivo | Qué sale |
 |---|---|---|
-| 1. Prototipo | ~1 de dic | Motor, mapa de capítulos y **capítulo 8 completo con cuadros de colores**. Lista de piezas de arte. *(hecho en esta rama)* |
+| 1. Prototipo | ~1 de dic | Motor, mapa de capítulos y **capítulo 8 completo con cuadros de colores**. Lista de piezas de arte. *(hecho)* |
 | 2. Molde | ~4 de dic | Probar el capítulo 8 en celulares reales, ajustar controles y ritmo, y elegir el pack base de arte |
 | 3. Capítulos | ~5 al 12 de dic | Capítulos 1 a 7 y 9 con cuadros de colores, entre dos personas, siguiendo el estándar de §3. Diseño en paralelo |
 | 4. Arte y sonido | ~8 al 14 de dic | Integrar los sprites, el mapa general, la música y los efectos |
