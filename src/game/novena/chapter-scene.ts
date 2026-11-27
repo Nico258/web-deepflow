@@ -247,13 +247,13 @@ export class ChapterScene extends Phaser.Scene {
     void this.progress(() => this.goToStep(start));
   }
 
-  /** Zoom entero para que los píxeles se vean nítidos: ×2 en el celular, más en pantallas grandes. */
+  /** Zoom de la cámara: el normal por el de la acción `zoom` (1 si no hubo). */
   private fitZoom() {
-    const { width, height } = this.scale.gameSize;
     this.cameras.main.setZoom(this.baseZoom() * this.zoomFactor);
     this.fitBounds();
   }
 
+  /** Zoom entero para que los píxeles se vean nítidos: ×2 en el celular, más en pantallas grandes. */
   private baseZoom() {
     const { width, height } = this.scale.gameSize;
     return Math.max(2, Math.floor(Math.min(width, height) / (TILE * 14)));
