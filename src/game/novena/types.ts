@@ -82,6 +82,8 @@ export type HerdConfig = {
   helpAfterMs?: number;
   /** Cuánto tarda la ayuda en llegar al máximo, en milisegundos. Por defecto 60000 (1 min). */
   helpRampMs?: number;
+  /** De 0 a 1: probabilidad de que una oveja tranquila dé un paso en cada `paceMs` (pasta cerca de donde la dejaron). Por defecto 0.2. */
+  wander?: number;
   /** Diálogo que se abre una vez cuando empieza la ayuda, para contar qué pasa. */
   helpDialog?: string;
 };

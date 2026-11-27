@@ -14,7 +14,9 @@ export const TILE = 16;
 const STEP_MS = 150;
 const SHEEP_STEP_MS = 220;
 /** Valores por defecto de los campos opcionales de `herd` (ver HerdConfig en types.ts). */
-const HERD_DEFAULTS = { paceMs: 320, homing: 0.2, helpAfterMs: 45_000, helpRampMs: 60_000 };
+const HERD_DEFAULTS = { paceMs: 320, homing: 0.2, helpAfterMs: 45_000, helpRampMs: 60_000, wander: 0.2 };
+/** Cuánto se aleja una oveja tranquila del lugar donde la dejaron, en casillas. */
+const WANDER_RADIUS = 2;
 /** Cuánto hay que mantener el dedo (o el clic) para caminar hacia él en vez de ir a un punto. */
 const HOLD_MS = 220;
 
@@ -45,7 +47,8 @@ const center = (t: Tile) => ({ x: t[0] * TILE + TILE / 2, y: t[1] * TILE + TILE 
 
 type Figure = Phaser.GameObjects.Container;
 type Person = { actor: Actor; tile: Tile; view: Figure; hidden: boolean; bob?: Phaser.Tweens.Tween };
-type Sheep = { tile: Tile; view: Figure; penned: boolean; moving: boolean };
+/** `home`: donde la dejaron (al empezar o tras huir); tranquila, pasta cerca de ahí. */
+type Sheep = { tile: Tile; home: Tile; view: Figure; penned: boolean; moving: boolean };
 
 export type SceneOptions = { chapter: Chapter; bus: NovenaBus; startAt?: string };
 
@@ -164,7 +167,7 @@ export class ChapterScene extends Phaser.Scene {
     this.updateLabels();
 
     for (const at of this.chapter.herd?.sheep ?? []) {
-      const s: Sheep = { tile: [...at], view: this.makeFigure(0xf4f1e8, "sheep"), penned: false, moving: false };
+      const s: Sheep = { tile: [...at], home: [...at], view: this.makeFigure(0xf4f1e8, "sheep"), penned: false, moving: false };
       this.place(s.view, s.tile);
       this.sheep.push(s);
       const arrow = this.add.triangle(0, 0, 0, -6, 11, 0, 0, 6, 0xf4f1e8).setStrokeStyle(2, 0x10182c).setDepth(1004).setVisible(false);
@@ -554,10 +557,25 @@ export class ChapterScene extends Phaser.Scene {
       );
       if (!options.length) continue;
       let choice: Tile | undefined;
-      if (manhattan(s.tile, this.playerTile) <= herd.fleeRadius) choice = this.fleeChoice(s, options, herd, help);
-      else if (Math.random() < 0.06) choice = Phaser.Utils.Array.GetRandom(options);
+      if (manhattan(s.tile, this.playerTile) <= herd.fleeRadius) {
+        choice = this.fleeChoice(s, options, herd, help);
+        if (choice) s.home = choice;
+      } else if (Math.random() < (herd.wander ?? HERD_DEFAULTS.wander)) choice = this.wanderChoice(s, options, herd);
       if (choice) this.moveSheep(s, choice);
     }
+  }
+
+  /**
+   * Paso de una oveja tranquila: pasta al azar cerca de donde la dejaron (sin irse ni volver al
+   * corral) y sin meterse al lado del jugador. Si se alejó de más, vuelve hacia ese lugar.
+   */
+  private wanderChoice(s: Sheep, options: Tile[], herd: HerdConfig): Tile | undefined {
+    const calm = options.filter((t) => manhattan(t, this.playerTile) > herd.fleeRadius);
+    if (!calm.length) return undefined;
+    if (s.penned) return Phaser.Utils.Array.GetRandom(calm);
+    const near = calm.filter((t) => manhattan(t, s.home) <= WANDER_RADIUS);
+    if (near.length) return Phaser.Utils.Array.GetRandom(near);
+    return calm.sort((a, b) => manhattan(a, s.home) - manhattan(b, s.home))[0];
   }
 
   /** Cuánta ayuda hay ahora, de 0 (nada) a 1 (toda): crece desde `helpAfterMs` durante `helpRampMs`. */

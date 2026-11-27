@@ -103,11 +103,12 @@ Las ovejas huyen del jugador: hay que ponerse detrás de ellas para empujarlas h
 | `fleeRadius` | A cuántas casillas del jugador se asustan. Recomendado: 3 |
 | `paceMs` | (Opcional) cada cuántos ms decide una oveja si da un paso. Más alto, más lentas. Por defecto 320 |
 | `homing` | (Opcional) de 0 a 1: al huir, cuánto prefieren el lado del corral al principio. Por defecto 0,2 |
+| `wander` | (Opcional) de 0 a 1: cuánto pastan las ovejas tranquilas (probabilidad de dar un paso cada `paceMs`). Por defecto 0,2 |
 | `helpAfterMs` | (Opcional) desde cuándo empieza a crecer la ayuda. Por defecto 45 000 (45 s); 0 la desactiva |
 | `helpRampMs` | (Opcional) cuánto tarda la ayuda en llegar al máximo. Por defecto 60 000 (1 min) |
 | `helpDialog` | (Opcional) diálogo que se abre una vez cuando empieza la ayuda |
 
-Al huir, una oveja prefiere alejarse en línea recta, evita pegarse a muros y cercas (si no, se desliza por el borde hasta una esquina) y, entre caminos parecidos, elige el lado del corral. Tranquila (con el jugador lejos), casi no se mueve y nunca vuelve sola.
+Al huir, una oveja prefiere alejarse en línea recta, evita pegarse a muros y cercas (si no, se desliza por el borde hasta una esquina) y, entre caminos parecidos, elige el lado del corral. Tranquila (con el jugador lejos), pasta: da pasitos al azar a no más de 2 casillas de donde la dejaron, sin acercarse al jugador, así que ni se pierde ni vuelve sola al corral.
 
 La **ayuda** existe para que nadie se quede trabado: es un juego para acompañar la novena, no para frustrarse. Desde `helpAfterMs`, la preferencia por el corral crece poco a poco durante `helpRampMs`; al máximo, una oveja va hacia el corral aunque tenga que pasar cerca del jugador (por ejemplo, para salir de un muro). Solo actúa cuando el jugador se acerca a la oveja.
 
