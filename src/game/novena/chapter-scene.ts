@@ -24,6 +24,8 @@ const WANDER_RADIUS = 2;
 const HOLD_MS = 220;
 /** Tras cerrar un diálogo o una ventana, cuánto se ignoran los toques y teclas (el mismo toque no camina). */
 const FREED_MS = 250;
+/** Cuánto tiempo en un paso sin cumplirlo hasta que su pista (`hint`) aparece sola. */
+const HINT_AFTER_MS = 60_000;
 
 const GROUND: Record<string, number> = { ",": 0xb89c6a, g: 0xb89c6a, _: 0xa9a294, d: 0x8a6239, "#": 0x77736c, "~": 0x3f73a6 };
 const GRASS = 0x6f9a4f;
@@ -156,6 +158,11 @@ export class ChapterScene extends Phaser.Scene {
   private topInset = 0;
   /** Lo último que se avisó de lo que lleva el jugador, para no repetir. */
   private itemsKey = "";
+  /** Cuándo empezó el paso actual y si ya se mostró su pista sola. */
+  private stepStartedAt = 0;
+  private hintShown = false;
+  /** Marca en la casilla adonde va el jugador después de tocar el mapa. */
+  private destMark?: Phaser.GameObjects.Rectangle;
 
   private keys!: Record<"up" | "down" | "left" | "right" | "w" | "a" | "s" | "d", Phaser.Input.Keyboard.Key>;
 
@@ -403,6 +410,7 @@ export class ChapterScene extends Phaser.Scene {
         this.pathGoals = [tile];
         this.pendingTalk = null;
         this.tapMark(tile);
+        if (route.length) this.showDestination(tile);
       }
     });
   }
@@ -411,6 +419,10 @@ export class ChapterScene extends Phaser.Scene {
 
   update() {
     this.updateSheepArrows();
+    if (!this.hintShown && this.step?.hint && !this.done && this.time.now - this.stepStartedAt >= HINT_AFTER_MS) {
+      this.hintShown = true;
+      this.bus.emit("hint", { text: this.step.hint, show: true });
+    }
     if (this.busy || this.moving) return;
     const k = this.keys;
     const held: Tile | null =
@@ -436,6 +448,7 @@ export class ChapterScene extends Phaser.Scene {
       return;
     }
     this.pathGoals = null;
+    this.hideDestination();
     const target = this.pendingTalk;
     if (target) {
       this.pendingTalk = null;
@@ -463,6 +476,21 @@ export class ChapterScene extends Phaser.Scene {
     this.path = [];
     this.pathGoals = null;
     this.pendingTalk = null;
+    this.hideDestination();
+  }
+
+  /** Deja marcada la casilla de destino mientras el jugador camina hacia ella. */
+  private showDestination(t: Tile) {
+    this.hideDestination();
+    const { x, y } = center(t);
+    // Debajo de las figuras (que van de 10 en adelante): al llegar, el jugador la tapa.
+    this.destMark = this.add.rectangle(x, y, TILE - 4, TILE - 4).setStrokeStyle(1.5, 0xfff1c4, 0.9).setDepth(9);
+    this.tweens.add({ targets: this.destMark, alpha: 0.35, duration: 500, yoyo: true, repeat: -1, ease: "Sine.inOut" });
+  }
+
+  private hideDestination() {
+    this.destMark?.destroy();
+    this.destMark = undefined;
   }
 
   private tryStep(dir: Tile) {
@@ -527,11 +555,17 @@ export class ChapterScene extends Phaser.Scene {
     const step = this.step;
     if (!step) {
       this.done = true;
+      this.refreshAlerts();
+      this.bus.emit("hint", { text: null, show: false });
       this.bus.emit("objective", null);
       this.bus.emit("complete");
       return;
     }
     this.showObjective();
+    this.stepStartedAt = this.time.now;
+    this.hintShown = false;
+    this.bus.emit("hint", { text: step.hint ?? null, show: false });
+    this.refreshAlerts();
     if (step.goal.type === "herd") {
       this.herdStartedAt = this.time.now;
       this.herdHelpAnnounced = false;
@@ -582,6 +616,7 @@ export class ChapterScene extends Phaser.Scene {
     }
     if (this.step?.goal.type === "flags") this.showObjective();
     this.showItems();
+    this.refreshAlerts();
   }
 
   /** Le avisa a React qué lleva el jugador (los `items` con su bandera marcada), si cambió. */
@@ -626,6 +661,7 @@ export class ChapterScene extends Phaser.Scene {
             if (p.actor.floating) this.startBob(p);
           }
         }
+        this.refreshAlerts();
         await this.tweenAsync({ targets: people.map((p) => p.view), alpha: show ? 1 : 0, duration: 450 });
         if (!show)
           for (const p of people) {
@@ -754,6 +790,7 @@ export class ChapterScene extends Phaser.Scene {
           p.view.setVisible(this.isHere(p)).setAlpha(1);
           if (!p.hidden && p.actor.floating) this.startBob(p);
         }
+        this.refreshAlerts();
       } else if (a.type === "lighting") {
         const l = LIGHT[a.mode];
         this.lightingOf.set(this.mapId, a.mode);
@@ -977,19 +1014,57 @@ export class ChapterScene extends Phaser.Scene {
     this.closeGate();
   }
 
-  // ───────── Depuración (solo en desarrollo) ─────────
+  // ───────── «!» sobre quien hace avanzar ─────────
 
-  /** A quién hay que hablarle para avanzar (ver `DebugState.talkTo`). */
-  private talkTarget(): Person | undefined {
+  /**
+   * Con quiénes hablar hace avanzar el paso: en `talk`, el de la meta; en `flags`, quienes marcan
+   * (al hablarles o con una respuesta) una bandera que falta. Solo los que no están ocultos.
+   */
+  private talkTargets(): Person[] {
     const goal = this.step?.goal;
-    if (goal?.type === "talk") return this.people.get(goal.actor);
-    if (goal?.type !== "flags") return undefined;
+    if (this.done || !goal) return [];
+    if (goal.type === "talk") {
+      const p = this.people.get(goal.actor);
+      return p && !p.hidden ? [p] : [];
+    }
+    if (goal.type !== "flags") return [];
     const missing = goal.all.filter((f) => !this.flags.has(f));
-    return [...this.people.values()].find((p) => {
+    return [...this.people.values()].filter((p) => {
       if (p.hidden) return false;
       const talk = currentTalk(p.actor, this.step?.id, this.flags);
       return !!talk && caseSets(this.chapter.dialogs, talk).some((f) => missing.includes(f));
     });
+  }
+
+  /** Pone o quita el «!» encima de cada personaje según `talkTargets()`. */
+  private refreshAlerts() {
+    const targets = new Set(this.talkTargets());
+    for (const p of this.people.values()) {
+      let alert = p.view.getByName("alert") as Phaser.GameObjects.Text | null;
+      if (!targets.has(p)) {
+        alert?.setVisible(false);
+        continue;
+      }
+      if (!alert) {
+        // Encima del nombre (las personas lo llevan más arriba que los objetos).
+        const y = p.actor.floating ? -16 : p.actor.kind === "object" ? -14 : -23;
+        alert = this.add
+          .text(0, y, "!", { fontFamily: "monospace", fontSize: "8px", fontStyle: "bold", color: "#2a1d07", backgroundColor: "#f2c35b", padding: { x: 2, y: 0 } })
+          .setOrigin(0.5, 1)
+          .setResolution(4)
+          .setName("alert");
+        p.view.add(alert);
+        this.tweens.add({ targets: alert, y: y - 2, duration: 450, yoyo: true, repeat: -1, ease: "Sine.inOut" });
+      }
+      alert.setVisible(true);
+    }
+  }
+
+  // ───────── Depuración (solo en desarrollo) ─────────
+
+  /** A quién hay que hablarle para avanzar (ver `DebugState.talkTo`). */
+  private talkTarget(): Person | undefined {
+    return this.talkTargets()[0];
   }
 
   private debugApi(): NovenaDebug {

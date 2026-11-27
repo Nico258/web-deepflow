@@ -90,6 +90,8 @@ const chapter: Chapter = {
     {
       id: "hablar",
       objective: "Habla con el vecino",
+      // Pista: se ve desde el menú, y sola si el paso tarda más de un minuto.
+      hint: "El vecino está arriba, cerca de la mesa. Tócalo para ir a hablarle.",
       goal: { type: "talk", actor: "vecino" },
       // Desde aquí el vecino te acompaña: camina detrás, también dentro de la casa.
       onDone: [{ type: "join", actor: "vecino" }],
@@ -99,11 +101,13 @@ const chapter: Chapter = {
     {
       id: "saludar",
       objective: "Saluda a la vecina y recoge la canasta en la casa ({n}/{total})",
+      hint: "La vecina está abajo, al centro. A la casa se entra por la puerta del muro de arriba.",
       goal: { type: "flags", all: ["saludo-vecina", "tiene-canasta"] },
     },
     {
       id: "salir",
       objective: "Sal por el camino",
+      hint: "El camino de tierra sale por el borde derecho.",
       goal: { type: "reach", zone: { x: 18, y: 4, w: 2, h: 1 } },
       onDone: [
         // El vecino deja de acompañar y camina solo hasta una casilla; la cámara se aleja.

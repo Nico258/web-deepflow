@@ -88,6 +88,11 @@ export type Step = {
    * (ovejas en el corral, o banderas de la meta ya marcadas).
    */
   objective?: string;
+  /**
+   * Pista para quien se traba: qué hacer o dónde buscar, sin resolverlo del todo. Se puede ver
+   * desde el menú de pausa, y aparece sola debajo del objetivo si el paso tarda más de un minuto.
+   */
+  hint?: string;
   goal: Goal;
   onStart?: Action[];
   onDone?: Action[];

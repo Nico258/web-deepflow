@@ -561,6 +561,8 @@ dialog.reto-avatar{max-width:520px}
 .nv-top{position:absolute;top:calc(max(10px,env(safe-area-inset-top)) + 50px);left:12px;right:12px;display:flex;flex-direction:column;align-items:center;gap:8px;pointer-events:none}
 .nv-objective{margin:0;max-width:100%;width:max-content;padding:8px 14px;background:#101a33e6;border:2px solid var(--nv-gold);border-radius:6px;color:var(--nv-cream);font:600 15px/1.3 var(--font-pixel),monospace;text-align:center;pointer-events:none;animation:nv-pop .3s ease-out}
 .nv-objective span{color:var(--nv-gold)}
+.nv-hint{display:flex;align-items:center;gap:6px;margin:-2px 0 0;max-width:100%;width:max-content;padding:6px 12px;background:#fff6dff2;color:#2a1d07;border:2px solid #2a1d07;border-radius:6px;font:500 14px/1.3 var(--font-pixel),monospace;animation:nv-pop .3s ease-out}
+.nv-hint svg{flex-shrink:0;color:#b07a10}
 /* Lo que lleva el jugador: a la derecha, debajo del objetivo; solo informativo */
 .nv-items{align-self:flex-end;display:flex;gap:6px;pointer-events:auto}
 .nv-item{display:grid;place-items:center;width:36px;height:36px;padding:0;background:#101a33e6;border:2px solid var(--nv-gold);border-radius:6px;cursor:pointer;animation:nv-item-in .35s ease-out}
@@ -590,7 +592,7 @@ dialog.reto-avatar{max-width:520px}
 @keyframes nv-rise{from{transform:translateY(12px);opacity:0}}
 @keyframes nv-bounce{50%{transform:translateY(3px)}}
 
-/* Ventanas del juego (<dialog> nativo, components/modal.tsx): cierre del capítulo y «¿Salir del capítulo?» */
+/* Ventanas del juego (<dialog> nativo, components/modal.tsx): cierre del capítulo y menú de pausa */
 dialog.nv-modal{width:min(560px,calc(100% - 32px));max-height:calc(100dvh - 32px);overflow:auto;margin:auto;overscroll-behavior:contain;background:var(--nv-night);border:3px solid var(--nv-gold);border-radius:8px;padding:24px 22px;color:var(--nv-cream);box-shadow:0 0 40px #f2c35b33}
 dialog.nv-modal[open]{display:grid;gap:14px}
 dialog.nv-modal::backdrop{background:#0b1020cc}
@@ -598,9 +600,15 @@ dialog.nv-modal::backdrop{background:#0b1020cc}
   dialog.nv-modal,dialog.nv-modal::backdrop{transition:opacity .35s ease-out}
   @starting-style{dialog.nv-modal[open],dialog.nv-modal[open]::backdrop{opacity:0}}
 }
-.nv-confirm{max-width:420px}
-.nv-confirm h2{margin:0;font:700 26px/1.15 var(--font-pixel),monospace}
-.nv-confirm p{margin:0;font-size:16px;line-height:1.5;color:#e9e2cf;text-wrap:pretty}
+.nv-menu{max-width:420px}
+.nv-menu h2{margin:0;font:700 26px/1.15 var(--font-pixel),monospace}
+.nv-menu-objective{margin:0;padding:10px 12px;border:2px solid var(--nv-gold);border-radius:6px;font:600 15px/1.35 var(--font-pixel),monospace}
+.nv-menu-objective span{color:var(--nv-gold)}
+.nv-menu-hint{display:flex;gap:8px;margin:0;padding:10px 12px;background:#fff6df;color:#2a1d07;border-radius:6px;font:500 15px/1.4 var(--font-pixel),monospace}
+.nv-menu-hint svg{flex-shrink:0;margin-top:2px;color:#b07a10}
+.nv-menu-hint-btn{justify-self:start}
+.nv-menu .nv-modal-actions{display:grid;gap:10px}
+.nv-menu-note{margin:0;font-size:14px;line-height:1.45;color:#9fb0cc;text-wrap:pretty}
 .nv-modal-actions{display:flex;flex-wrap:wrap;gap:10px}
 .nv-ending .nv-kicker{color:var(--nv-gold)}
 .nv-ending h2{margin:0;font:700 32px/1.1 var(--font-pixel),monospace}

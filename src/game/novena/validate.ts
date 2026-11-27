@@ -302,6 +302,8 @@ export function validateChapter(chapter: Chapter): ChapterReport {
     if (seenSteps.has(step.id)) errors.push(`${where}: el id está repetido.`);
     seenSteps.add(step.id);
     if (step.goal.type !== "auto" && !step.objective) warnings.push(`${where}: no tiene \`objective\`; la persona no sabrá qué hacer.`);
+    if (step.hint !== undefined && !step.hint.trim()) errors.push(`${where}: \`hint\` está vacío.`);
+    if (step.goal.type === "auto" && step.hint) warnings.push(`${where}: tiene \`hint\`, pero la meta es \`auto\` y nunca se ve.`);
     runActions(step.onStart, `${where} (onStart)`);
 
     const goal = step.goal;

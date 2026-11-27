@@ -23,6 +23,11 @@ type Events = {
   /** Lo que lleva el jugador ahora. */
   items: CarriedItem[];
   /**
+   * La pista del paso actual (null si no tiene). `show`: si ya hay que mostrarla debajo del objetivo
+   * (pasó un rato sin cumplir el paso); si no, solo se ve desde el menú.
+   */
+  hint: { text: string | null; show: boolean };
+  /**
    * React avisa cuánto ocupa arriba la interfaz (barra y objetivo), en píxeles de pantalla.
    * El juego no deja que el jugador ni el borde del mapa queden debajo.
    */

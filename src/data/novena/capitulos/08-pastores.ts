@@ -90,17 +90,20 @@ const chapter: Chapter = {
     {
       id: "hablar-ruben",
       objective: "Habla con el abuelo Rubén, junto a la fogata",
+      hint: "Rubén está junto a la fogata, en el centro del campamento. Tócalo para ir a hablarle.",
       goal: { type: "talk", actor: "ruben" },
     },
     {
       id: "rebano",
       objective: "Lleva las ovejas al corral ({n}/{total})",
+      hint: "Las ovejas huyen de ti: ponte del lado contrario al corral y empújalas hacia la puerta. Las flechas del borde señalan las que faltan.",
       goal: { type: "herd" },
       onDone: [{ type: "say", dialog: "corral-listo" }],
     },
     {
       id: "volver",
       objective: "Vuelve a la fogata",
+      hint: "La fogata está en el centro del campamento: busca el brillo naranja.",
       goal: { type: "reach", zone: { x: 16, y: 10, w: 7, h: 5 } },
       onDone: [
         { type: "say", dialog: "fogata" },
@@ -123,6 +126,7 @@ const chapter: Chapter = {
     {
       id: "a-belen",
       objective: "Ve a Belén por el camino del este",
+      hint: "Sigue el camino de tierra hasta el borde derecho del mapa.",
       goal: { type: "reach", zone: { x: 38, y: 11, w: 2, h: 3 } },
       onDone: [{ type: "say", dialog: "salida" }],
     },

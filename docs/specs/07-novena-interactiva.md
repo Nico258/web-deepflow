@@ -54,6 +54,12 @@ El capítulo ★ entra, pero **con prioridad baja y al final**.
 - **Controles:**
   - En el celular: **tocar para caminar**. Se toca un punto y el personaje va hasta allá; si se toca a alguien, camina hasta su lado y le habla. **Mantener el dedo** hace que camine hacia él mientras no se suelte (sirve para arrear ovejas).
   - En el computador: flechas o WASD para caminar, y Espacio, Enter o E para hablar.
+  - El botón «Menú» (o Escape) pausa el juego y abre el menú: objetivo actual, pista del paso, «Seguir jugando», «Empezar de nuevo» y «Salir al mapa». Es un `<dialog>` nativo.
+- **Ayudas para no perderse:**
+  - Un **«!»** encima de quien hace avanzar el paso: en `talk`, la persona de la meta; en `flags`, quienes marcan una bandera que falta. Sale solo, del guion.
+  - Al tocar un punto del mapa, una **marca en la casilla de destino** se queda mientras el jugador camina hacia ella.
+  - La **pista** (`hint`) del paso: se puede pedir desde el menú y aparece sola debajo del objetivo si el paso lleva más de un minuto sin cumplirse.
+  - El objetivo se anuncia en una región viva fija (`role="status"`), así el lector de pantalla lee cada objetivo nuevo aunque la caja visible se oculte durante los diálogos.
 - **Movimiento por casillas** de 16 px. Es más simple de programar y de diseñar, y basta para este juego.
 - **Zoom entero** según la pantalla (×2 en el celular, ×3 o más en el computador), para que el pixel art se vea nítido.
 - **Nada queda debajo de la barra y el objetivo de arriba.** React le avisa al juego cuánto ocupan, y la cámara deja ese espacio libre: cerca del borde superior del mapa se ve una franja oscura en vez de esconder al jugador o las primeras filas del mapa.
@@ -77,7 +83,7 @@ Un capítulo tiene:
 | `player` | Nombre, color y casilla de inicio del personaje que se maneja |
 | `actors` | Las demás personas (y ángeles, animales que hablan…) y los objetos: casilla, color, si empiezan ocultos y qué dicen en cada paso |
 | `dialogs` | Todas las conversaciones, cada una como una lista de líneas `{ who, text }` |
-| `steps` | **Los pasos del capítulo, en orden.** Cada paso tiene un objetivo visible y una meta |
+| `steps` | **Los pasos del capítulo, en orden.** Cada paso tiene un objetivo visible (`objective`), una meta (`goal`) y, si puede trabar, una pista (`hint`) |
 | `herd` | (Opcional) la configuración del minijuego de reunir ovejas |
 | `ending` | Versículo, referencia y pregunta del cierre |
 
@@ -255,6 +261,7 @@ Así se arman los capítulos 1 a 7, 9 y ★ mientras el capítulo 8 se sigue pul
 - **Unos 5 minutos** jugando sin apuro. Como medida, el capítulo 8 tiene 5 pasos y unas 40 líneas de diálogo.
 - Un orden que funciona: un paso `auto` de introducción (dónde estamos, quién soy, qué pasa), 3 o 4 pasos con metas, **un momento especial** y el cierre.
 - Cada paso con meta tiene un `objective` corto en imperativo («Habla con Rubén», «Lleva las ovejas al corral»). Nadie debería quedarse sin saber qué hacer.
+- Y una `hint` que ayude a quien se trabó sin resolverlo del todo: dónde buscar o cómo se hace («Rubén está junto a la fogata, en el centro del campamento»). Se ve desde el menú y sola pasado un minuto.
 - El mapa, pequeño: lo justo para el capítulo (el del 8 es de 40 × 26 casillas). Mejor pocos lugares con algo que hacer que mucho mapa vacío.
 
 **Diálogos**
@@ -325,7 +332,7 @@ Las filas pueden tener distinto largo: el motor completa con `#`. Los personajes
 ### Decidido
 
 - `localStorage`, clave `deepflow:novena:v1`: los capítulos completados, con su fecha. Nada más: no hay nombre ni textos.
-- No se guarda el avance **dentro** de un capítulo: si se sale a la mitad, se empieza de nuevo. Con 5 minutos por capítulo no vale la pena la complejidad. Por eso el botón «Mapa» pregunta antes de salir, y el juego se detiene mientras tanto.
+- No se guarda el avance **dentro** de un capítulo: si se sale a la mitad, se empieza de nuevo. Con 5 minutos por capítulo no vale la pena la complejidad. Por eso salir es desde el menú de pausa, que lo avisa, y el juego se detiene mientras está abierto.
 - Si `localStorage` no está disponible (modo privado estricto), el juego funciona igual, pero no recuerda qué se completó.
 
 ## 7. Plan de trabajo
@@ -343,7 +350,7 @@ Programa una persona. El primer capítulo (el 8) queda como **molde** para que o
 
 **Primero funcional, después el arte.** Los capítulos se escriben y se prueban con cuadros de colores. El arte entra después en el motor (capa de dibujo y manifiesto de sprites), sin cambiar los guiones. Mientras tanto, el capítulo 8 se sigue puliendo como molde y el motor suma piezas en etapas pequeñas:
 
-1. Indicadores: «!» sobre quien tiene algo que decir, marca del destino al tocar, menú de pausa y pistas (`hint`) por paso.
+1. Indicadores: «!» sobre quien tiene algo que decir, marca del destino al tocar, menú de pausa y pistas (`hint`) por paso. *(hecho)*
 2. Diálogos más accesibles (lector de pantalla, menos movimiento) y con pausas en la puntuación.
 3. Escena de los ángeles del capítulo 8: acercar la cámara y luz.
 4. Motor: banderas, diálogos según banderas, elecciones, objetos, personajes que caminan o acompañan, acercar la cámara y varios mapas. *(hecho)*

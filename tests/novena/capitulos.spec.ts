@@ -87,16 +87,17 @@ for (const info of playable) {
         continue;
       }
 
-      // Una vez por capítulo: «Mapa» a mitad del juego pregunta antes de salir, y se puede seguir jugando.
+      // Una vez por capítulo: «Menú» a mitad del juego abre la pausa, y se puede seguir jugando.
       if (!exitChecked) {
         exitChecked = true;
-        const mapButton = page.getByRole("button", { name: "Mapa" });
-        if (mobile) await mapButton.tap();
-        else await mapButton.click();
-        const confirm = page.getByRole("dialog", { name: "¿Salir del capítulo?" });
-        await expect(confirm).toBeVisible();
-        await confirm.getByRole("button", { name: "Seguir jugando" }).click();
-        await expect(confirm).toBeHidden();
+        const menuButton = page.getByRole("button", { name: "Menú" });
+        if (mobile) await menuButton.tap();
+        else await menuButton.click();
+        const menu = page.getByRole("dialog", { name: "Pausa" });
+        await expect(menu).toBeVisible();
+        await expect(menu.getByRole("button", { name: "Salir al mapa" })).toBeVisible();
+        await menu.getByRole("button", { name: "Seguir jugando" }).click();
+        await expect(menu).toBeHidden();
         continue;
       }
 
