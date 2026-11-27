@@ -237,13 +237,23 @@ export class ChapterScene extends Phaser.Scene {
     this.setupInput();
 
     // React pausa el juego mientras hay una ventana abierta (por ejemplo, «¿Salir del capítulo?»).
+    let pausedAt = 0;
     const offPause = this.bus.on("pause", (paused) => {
-      if (paused) return this.scene.pause();
+      if (paused) {
+        pausedAt = performance.now();
+        return this.scene.pause();
+      }
       this.scene.resume();
       this.idleSince = this.time.now;
+      // El tiempo con el menú abierto no cuenta para que aparezca la pista sola.
+      if (pausedAt) this.stepStartedAt += performance.now() - pausedAt;
+      pausedAt = 0;
     });
     this.events.once(Phaser.Scenes.Events.DESTROY, offPause);
-    // La barra y el objetivo de arriba tapan el mapa: la cámara deja ese espacio libre.
+    // La barra y el objetivo de arriba tapan el mapa: la cámara deja ese espacio libre. React pudo
+    // avisarlo antes de que la escena existiera: se toma el último valor.
+    this.topInset = this.bus.last("hudInset") ?? 0;
+    this.fitBounds();
     const offInset = this.bus.on("hudInset", (px) => {
       this.topInset = px;
       this.fitBounds();
@@ -307,7 +317,10 @@ export class ChapterScene extends Phaser.Scene {
     const mode = this.lightingOf.get(this.mapId) ?? "day";
     const light = LIGHT[mode];
     this.overlay.setSize(this.grid[0].length * TILE, this.grid.length * TILE).setFillStyle(light.color, light.alpha);
-    for (const g of this.glows) g.destroy();
+    for (const g of this.glows) {
+      this.tweens.killTweensOf(g);
+      g.destroy();
+    }
     this.glows = [];
     this.grid.forEach((row, y) =>
       row.forEach((c, x) => {
@@ -501,6 +514,7 @@ export class ChapterScene extends Phaser.Scene {
   }
 
   private hideDestination() {
+    if (this.destMark) this.tweens.killTweensOf(this.destMark);
     this.destMark?.destroy();
     this.destMark = undefined;
   }
@@ -530,6 +544,9 @@ export class ChapterScene extends Phaser.Scene {
 
   private afterPlayerMove() {
     this.updateLabels();
+    // Si mientras caminaba empezó una escena (por ejemplo, el diálogo de ayuda de las ovejas), no se
+    // empieza otra encima: dos `progress` a la vez dejarían libre al jugador con la escena abierta.
+    if (this.busy) return;
     const exit = this.exitAt(this.playerTile);
     if (exit && matches(exit.when, this.step?.id, this.flags)) {
       void this.progress(async () => {
@@ -863,7 +880,8 @@ export class ChapterScene extends Phaser.Scene {
     if (!herd || this.busy || this.mapId !== MAIN_MAP) return;
     const herding = this.step?.goal.type === "herd";
     const help = herding ? this.herdHelp(herd) : 0;
-    if (help > 0 && !this.herdHelpAnnounced) {
+    // El diálogo de ayuda espera a que el jugador termine su paso (ver afterPlayerMove).
+    if (help > 0 && !this.herdHelpAnnounced && !this.moving) {
       this.herdHelpAnnounced = true;
       if (herd.helpDialog) {
         void this.progress(() => this.say(herd.helpDialog!));
@@ -1077,7 +1095,10 @@ export class ChapterScene extends Phaser.Scene {
     for (const p of this.people.values()) {
       let alert = this.alerts.get(p);
       if (!targets.has(p)) {
-        alert?.destroy();
+        if (alert) {
+          this.tweens.killTweensOf(alert.list);
+          alert.destroy();
+        }
         this.alerts.delete(p);
         continue;
       }

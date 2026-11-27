@@ -38,6 +38,12 @@ type Handler<T> = (payload: T) => void;
 
 export class NovenaBus {
   private handlers = new Map<keyof Events, Set<Handler<never>>>();
+  /** Lo último que se emitió de cada evento (lo usa la escena al arrancar, por ejemplo con `hudInset`). */
+  private lastValues = new Map<keyof Events, unknown>();
+
+  last<K extends keyof Events>(event: K): Events[K] | undefined {
+    return this.lastValues.get(event) as Events[K] | undefined;
+  }
 
   on<K extends keyof Events>(event: K, handler: Handler<Events[K]>) {
     let set = this.handlers.get(event);
@@ -47,6 +53,7 @@ export class NovenaBus {
   }
 
   emit<K extends keyof Events>(event: K, ...payload: Events[K] extends void ? [] : [Events[K]]) {
+    this.lastValues.set(event, payload[0]);
     this.handlers.get(event)?.forEach((h) => (h as Handler<Events[K]>)(payload[0] as Events[K]));
   }
 
@@ -59,6 +66,7 @@ export class NovenaBus {
     });
   }
 
+  /** Quita todos los que escuchan (al cambiar de partida: la escena anterior no debe oír nada más). */
   clear() {
     this.handlers.clear();
   }

@@ -72,6 +72,9 @@ export function GameView({ info, chapter, startAt, next, onExit, onComplete, onP
       cancelled = true;
       offs.forEach((off) => off());
       stop?.();
+      // La escena anterior puede tener promesas esperando (un diálogo abierto al «Empezar de nuevo»):
+      // sin esto, el primer diálogo de la partida nueva también las despertaría.
+      bus.clear();
       setDialog(null);
       setObjective(null);
       setItems([]);
@@ -208,8 +211,9 @@ export function GameView({ info, chapter, startAt, next, onExit, onComplete, onP
             ))}
           </div>
         )}
-        <p id="nv-item-tip" className="nv-item-tip" role="status" hidden={!tipItem || !!dialog}>
-          {tipItem && (
+        {/* Siempre en el DOM (vacía se oculta con CSS): así el lector de pantalla anuncia la pista al aparecer. */}
+        <p id="nv-item-tip" className="nv-item-tip" role="status">
+          {tipItem && !dialog && (
             <>
               <strong>{tipItem.name}</strong>
               {tipItem.hint && <> · {tipItem.hint}</>}

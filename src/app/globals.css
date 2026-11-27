@@ -569,7 +569,7 @@ dialog.reto-avatar{max-width:520px}
 .nv-item span{width:16px;height:16px;border:2px solid #2a1d07;border-radius:2px}
 .nv-item[aria-expanded="true"],.nv-item:focus-visible{background:#2a3a63;outline:2px solid var(--nv-cream);outline-offset:1px}
 .nv-item-tip{position:absolute;top:calc(100% + 6px);right:0;max-width:min(300px,100%);pointer-events:auto;margin:0;padding:8px 12px;background:#fff6df;color:#2a1d07;border:2px solid #2a1d07;border-radius:6px;box-shadow:0 4px 0 #0008;font:500 14px/1.35 var(--font-pixel),monospace;z-index:2}
-.nv-item-tip[hidden]{display:none}
+.nv-item-tip:empty{display:none}
 @keyframes nv-item-in{0%{transform:scale(.4);opacity:0}70%{transform:scale(1.15)}}
 @keyframes nv-pop{from{opacity:0;transform:translateY(-6px)}}
 

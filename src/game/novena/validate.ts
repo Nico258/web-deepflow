@@ -31,6 +31,7 @@ export function validateChapter(chapter: Chapter): ChapterReport {
   const zoneInside = (z: Zone, map = MAIN_MAP) => z.w > 0 && z.h > 0 && inside([z.x, z.y], map) && inside([z.x + z.w - 1, z.y + z.h - 1], map);
 
   // ───────── Mapas ─────────
+  if (chapter.maps?.[MAIN_MAP]) errors.push(`\`maps\`: «${MAIN_MAP}» es el id del mapa principal (\`map\`); usa otro nombre.`);
   for (const [id, m] of allMaps(chapter)) {
     const name = id === MAIN_MAP ? "Mapa" : `Mapa «${id}»`;
     if (!m.rows.length || !m.rows.some((r) => r.length)) errors.push(`${name}: está vacío.`);
@@ -74,6 +75,18 @@ export function validateChapter(chapter: Chapter): ChapterReport {
         if (!chapter.dialogs[c.dialog]) errors.push(`${what}: abre el diálogo «${c.dialog}», que no existe.`);
         checkWhen(c.when, what);
         if (!c.when && i < cases.length - 1) warnings.push(`${what}: no tiene \`when\`, así que los casos que siguen nunca se usan.`);
+        // Se usa el primer caso que se cumple: uno anterior que no pide banderas y vale en los mismos
+        // pasos (o en todos) lo tapa siempre.
+        else if (c.when) {
+          const steps = (w: Condition | undefined) => (w?.step === undefined ? null : Array.isArray(w.step) ? w.step : [w.step]);
+          const mine = steps(c.when);
+          const cover = cases.slice(0, i).findIndex((prev) => {
+            if (!prev.when || prev.when.flags?.length || prev.when.not?.length) return false;
+            const theirs = steps(prev.when);
+            return theirs === null || (mine !== null && mine.every((s) => theirs.includes(s)));
+          });
+          if (cover >= 0) warnings.push(`${what}: el caso ${cover + 1} vale en los mismos pasos y va antes, así que este nunca se usa. Pon primero el más específico.`);
+        }
         for (const f of [...flagList(c.set), ...flagList(c.unset)]) flagsSet.add(f);
       });
     } else
@@ -124,6 +137,7 @@ export function validateChapter(chapter: Chapter): ChapterReport {
       else if (mapOf(chapter, e.to)?.exits?.some((x) => same(x.at, e.arrive)))
         warnings.push(`${where}: se llega justo sobre otra salida; al moverse se puede volver sin querer. Mejor una casilla al lado.`);
       checkWhen(e.when, where);
+      if (e.closed && !e.when) warnings.push(`${where}: tiene \`closed\` pero no \`when\`; la salida siempre está abierta y ese diálogo nunca se ve.`);
       if (e.closed) {
         exitDialogs.push(e.closed);
         if (!chapter.dialogs[e.closed]) errors.push(`${where}: \`closed\` abre el diálogo «${e.closed}», que no existe.`);
@@ -132,9 +146,12 @@ export function validateChapter(chapter: Chapter): ChapterReport {
 
   // ───────── Lo que se lleva ─────────
   const itemFlags = new Set<string>();
+  const itemNames = new Set<string>();
   (chapter.items ?? []).forEach((item, i) => {
     const where = `Objeto que se lleva ${i + 1} (\`items\`)`;
     if (!item.name.trim()) errors.push(`${where}: no tiene nombre.`);
+    else if (itemNames.has(item.name)) errors.push(`${where}: el nombre «${item.name}» ya es de otro objeto.`);
+    itemNames.add(item.name);
     if (!item.flag.trim()) errors.push(`${where}: no tiene bandera.`);
     else if (itemFlags.has(item.flag)) errors.push(`${where}: la bandera «${item.flag}» ya es de otro objeto.`);
     itemFlags.add(item.flag);
@@ -315,6 +332,11 @@ export function validateChapter(chapter: Chapter): ChapterReport {
         if (!talkCases(actor).some((c) => stepAllows(c.when, step.id)))
           errors.push(`${where}: «${actor.id}» no tiene diálogo para este paso (ni \`default\`), así que no se puede cumplir.`);
         if (!besideReachable(actor, reachable())) errors.push(`${where}: no hay forma de llegar al lado de «${actor.id}».`);
+        // Al cumplirse, quedan marcadas las banderas de ese diálogo (las de sus respuestas no:
+        // dependen de lo que se elija).
+        const talk = talkCases(actor).find((c) => stepAllows(c.when, step.id) && !c.when?.flags?.length && !c.when?.not?.length);
+        for (const f of flagList(talk?.set)) flagsNow.add(f);
+        for (const f of flagList(talk?.unset)) flagsNow.delete(f);
       }
     } else if (goal.type === "reach") {
       const map = goal.map ?? MAIN_MAP;

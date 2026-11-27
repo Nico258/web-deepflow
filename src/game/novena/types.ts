@@ -63,6 +63,7 @@ type ActionKind =
   /**
    * Hace caminar a un personaje (o a "player") hasta una casilla de su mapa, y espera a que llegue.
    * `ms`: cuánto tarda cada paso (por defecto 220). Los que flotan van en línea recta.
+   * Si el personaje estaba acompañando al jugador (`join`), deja de hacerlo.
    */
   | { type: "move"; actor: string; to: Tile; ms?: number }
   /** El personaje empieza a acompañar al jugador: lo sigue detrás, también a otros mapas. */
