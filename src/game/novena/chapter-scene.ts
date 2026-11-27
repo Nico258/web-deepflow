@@ -162,8 +162,10 @@ export class ChapterScene extends Phaser.Scene {
     this.drawMap();
 
     for (const actor of this.chapter.actors) {
-      // Los ángeles no llevan nombre encima: se presentan en el diálogo.
-      const view = this.makeFigure(actor.color, actor.floating ? "angel" : "person", actor.floating ? undefined : actor.name);
+      // Los ángeles no llevan nombre encima (se presentan en el diálogo), ni los objetos de decoración.
+      const kind = actor.floating ? "angel" : actor.kind === "object" ? "object" : "person";
+      const label = kind === "person" || (kind === "object" && actor.talk) ? actor.name : undefined;
+      const view = this.makeFigure(actor.color, kind, label);
       const person: Person = { actor, tile: [...actor.at], view, hidden: !!actor.hidden };
       this.place(view, actor.at, actor.floating);
       view.setVisible(!person.hidden);
@@ -453,6 +455,7 @@ export class ChapterScene extends Phaser.Scene {
       await this.say(talk.dialog);
       this.setFlags(talk.set, true);
       this.setFlags(talk.unset, false);
+      if (talk.do) await this.run(talk.do);
       const goal = this.step?.goal;
       if ((goal?.type === "talk" && goal.actor === person.actor.id) || this.flagsGoalMet()) await this.finishStep();
     });
@@ -575,24 +578,26 @@ export class ChapterScene extends Phaser.Scene {
   private skipStep(step: Step) {
     const goal = step.goal;
     if (goal.type === "herd") this.penAllSheep();
-    const done = (actions?: Action[]) => {
-      for (const a of actions ?? [])
-        if ((a.type === "set" || a.type === "unset") && matches(a.when, step.id, this.flags)) this.setFlags(a.flag, a.type === "set");
-    };
-    done(step.onStart);
+    this.applyAtOnce(step.onStart, step.id);
     // La meta se da por cumplida: las banderas que pide quedan marcadas, y hablar con alguien
-    // marca las mismas que marcaría su diálogo.
+    // hace lo mismo que haría su diálogo (banderas y `do`).
     if (goal.type === "flags") this.setFlags(goal.all, true);
     if (goal.type === "talk") {
       const person = this.people.get(goal.actor);
       const talk = person && currentTalk(person.actor, step.id, this.flags);
       this.setFlags(talk?.set, true);
       this.setFlags(talk?.unset, false);
+      this.applyAtOnce(talk?.do, step.id);
     }
-    done(step.onDone);
-    for (const a of [...(step.onStart ?? []), ...(step.onDone ?? [])]) {
-      if (!matches(a.when, step.id, this.flags)) continue;
-      if (a.type === "show" || a.type === "hide") {
+    this.applyAtOnce(step.onDone, step.id);
+  }
+
+  /** Deja hecho, sin animación ni diálogos, lo que cambia el mundo en estas acciones (banderas, quién se ve, luz). */
+  private applyAtOnce(actions: Action[] | undefined, stepId: string) {
+    for (const a of actions ?? []) {
+      if (!matches(a.when, stepId, this.flags)) continue;
+      if (a.type === "set" || a.type === "unset") this.setFlags(a.flag, a.type === "set");
+      else if (a.type === "show" || a.type === "hide") {
         for (const p of this.peopleIn(a.actor)) {
           p.hidden = a.type === "hide";
           p.view.setVisible(!p.hidden).setAlpha(1);
@@ -1010,9 +1015,12 @@ export class ChapterScene extends Phaser.Scene {
     );
   }
 
-  private makeFigure(color: number, kind: "person" | "player" | "angel" | "sheep", name?: string): Figure {
+  private makeFigure(color: number, kind: "person" | "player" | "angel" | "sheep" | "object", name?: string): Figure {
     const parts: Phaser.GameObjects.GameObject[] = [this.add.ellipse(0, 6, 12, 4, 0x000000, 0.25)];
-    if (kind === "sheep") {
+    if (kind === "object") {
+      // Una caja con borde, para que se distinga de las personas.
+      parts.push(this.add.rectangle(0, 2, 10, 9, color).setStrokeStyle(1, 0x2a1d07), this.add.rectangle(0, -1, 10, 2, 0xffffff, 0.25));
+    } else if (kind === "sheep") {
       parts.push(this.add.ellipse(0, 1, 13, 9, color), this.add.circle(5, -1, 3, 0x3a3530), this.add.rectangle(-3, 6, 2, 3, 0x3a3530), this.add.rectangle(3, 6, 2, 3, 0x3a3530));
     } else if (kind === "angel") {
       parts.push(
@@ -1028,7 +1036,7 @@ export class ChapterScene extends Phaser.Scene {
     }
     if (name) {
       const label = this.add
-        .text(0, -15, name, { fontFamily: "monospace", fontSize: "6px", color: "#ffffff", stroke: "#00000099", strokeThickness: 2 })
+        .text(0, kind === "object" ? -6 : -15, name, { fontFamily: "monospace", fontSize: "6px", color: "#ffffff", stroke: "#00000099", strokeThickness: 2 })
         .setOrigin(0.5, 1)
         .setResolution(4)
         .setName("label");

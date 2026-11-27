@@ -35,8 +35,11 @@ export type Flags = string | string[];
  */
 export type Condition = { step?: string | string[]; flags?: string[]; not?: string[] };
 
-/** Un caso de lo que dice un personaje al hablarle. `set` y `unset` se aplican al terminar el diálogo. */
-export type TalkCase = { when?: Condition; dialog: string; set?: Flags; unset?: Flags };
+/**
+ * Un caso de lo que dice un personaje al hablarle. Al terminar el diálogo se aplican `set` y
+ * `unset`, y después se hacen las acciones de `do` (por ejemplo, `hide` para recoger un objeto).
+ */
+export type TalkCase = { when?: Condition; dialog: string; set?: Flags; unset?: Flags; do?: Action[] };
 
 /** Una acción del guion. Con `when`, solo se hace si se cumple la condición (si no, se salta). */
 export type Action = ActionKind & { when?: Condition };
@@ -83,6 +86,11 @@ export type Actor = {
   at: Tile;
   /** Color del cuadro mientras no haya sprite. */
   color: number;
+  /**
+   * `person` (por defecto) o `object`: una cosa del mapa (un cántaro, una canasta, el burro cargado…).
+   * Se toca y se «habla» con ella igual que con una persona; sin `talk`, es solo decoración.
+   */
+  kind?: "person" | "object";
   /** Empieza oculto hasta una acción `show`. */
   hidden?: boolean;
   /** Flota y no bloquea el paso (ángeles). No lleva nombre encima: se presenta en el diálogo. */

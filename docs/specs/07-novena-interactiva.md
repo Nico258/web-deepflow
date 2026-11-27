@@ -72,7 +72,7 @@ Un capítulo tiene:
 |---|---|
 | `map` | El mapa como filas de texto (§4) y si es de día o de noche |
 | `player` | Nombre, color y casilla de inicio del personaje que se maneja |
-| `actors` | Las demás personas (y ángeles, animales que hablan…): casilla, color, si empiezan ocultos y qué dicen en cada paso |
+| `actors` | Las demás personas (y ángeles, animales que hablan…) y los objetos: casilla, color, si empiezan ocultos y qué dicen en cada paso |
 | `dialogs` | Todas las conversaciones, cada una como una lista de líneas `{ who, text }` |
 | `steps` | **Los pasos del capítulo, en orden.** Cada paso tiene un objetivo visible y una meta |
 | `herd` | (Opcional) la configuración del minijuego de reunir ovejas |
@@ -103,7 +103,7 @@ Una **bandera** es un nombre que el capítulo marca para recordar algo: «toco-c
 `talk` de un personaje tiene dos formas:
 
 - **Simple**, como en el capítulo 8: `{ idDelPaso: "dialogo", default: "otro" }`, según el paso actual.
-- **Por casos**: una lista; se usa **el primer caso cuya condición se cumpla**. Cada caso tiene `dialog` y, si se quiere, `when` (la condición) y `set` / `unset` (banderas que se marcan o desmarcan al terminar ese diálogo). Un caso sin `when` sirve siempre, así que va al final.
+- **Por casos**: una lista; se usa **el primer caso cuya condición se cumpla**. Cada caso tiene `dialog` y, si se quiere, `when` (la condición), `set` / `unset` (banderas que se marcan o desmarcan al terminar ese diálogo) y `do` (acciones que se hacen después, como `hide`). Un caso sin `when` sirve siempre, así que va al final.
 
 | `when` | Se cumple si… |
 |---|---|
@@ -122,6 +122,24 @@ Ejemplo, tocar puertas en Belén (capítulo 7): cada posadero dice que no hay lu
 // En steps:
 { id: "puertas", objective: "Busca dónde pasar la noche ({n}/{total})",
   goal: { type: "flags", all: ["toco-casa-1", "toco-casa-2", "toco-casa-3"] } },
+```
+
+### Objetos
+
+Un personaje con `kind: "object"` es una cosa del mapa: un cántaro, una canasta, la carga del burro. Se dibuja como una caja, se toca y se «habla» con él igual que con una persona (el texto lo dice `narrator`), y bloquea el paso. Sin `talk`, es solo decoración y no lleva nombre encima.
+
+No hay inventario (§9): **tener algo es una bandera**. Recoger es marcarla y ocultar el objeto; usarlo es un caso de `talk` que pide esa bandera.
+
+```ts
+// Recoger: marca la bandera y desaparece.
+{ id: "pan", name: "Pan", kind: "object", at: [12, 5], color: 0xc9a25a, talk: [
+  { dialog: "recoges-el-pan", set: "tiene-pan", do: [{ type: "hide", actor: "pan" }] },
+] },
+// Usar: el burro dice otra cosa si llevas el pan.
+{ id: "burro", name: "Burro", at: [20, 8], color: 0x8b7d6b, talk: [
+  { when: { flags: ["tiene-pan"] }, dialog: "cargas-el-pan", set: "burro-cargado", unset: "tiene-pan" },
+  { dialog: "burro-espera" },
+] },
 ```
 
 ### Elegir una respuesta
@@ -214,7 +232,6 @@ Así se arman los capítulos 1 a 7, 9 y ★ mientras el capítulo 8 se sigue pul
 
 Está en el plan (§7) y llegará sin romper los capítulos ya escritos, porque son campos opcionales nuevos. Mientras tanto, se arma el capítulo en línea recta con lo que hay:
 
-- Objetos para recoger o usar.
 - Personajes que caminan solos o que acompañan al jugador.
 - Varios mapas en un capítulo (salir de una casa a la calle).
 - Música por momento y acercar la cámara.

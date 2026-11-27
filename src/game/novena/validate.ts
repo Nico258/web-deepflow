@@ -164,7 +164,12 @@ export function validateChapter(chapter: Chapter): ChapterReport {
     return (t: Tile) => seen.has(key(t));
   };
 
-  const runActions = (actions: Action[] | undefined, where: string) => {
+  /**
+   * Revisa acciones. Con `simulate` (las de los pasos, que pasan en orden) además lleva la cuenta
+   * de quién se ve y qué banderas ya están marcadas; las de `do` en `talk` pasan cuando la persona
+   * quiera, así que solo se revisa que lo que usan exista.
+   */
+  const runActions = (actions: Action[] | undefined, where: string, simulate = true) => {
     for (const a of actions ?? []) {
       checkWhen(a.when, `${where}, \`${a.type}\``);
       switch (a.type) {
@@ -176,6 +181,7 @@ export function validateChapter(chapter: Chapter): ChapterReport {
         case "hide":
           for (const id of Array.isArray(a.actor) ? a.actor : [a.actor]) {
             if (!actors.has(id)) errors.push(`${where}: \`${a.type}\` usa el personaje «${id}», que no existe.`);
+            else if (!simulate) continue;
             else if (a.type === "show") hidden.delete(id);
             else hidden.add(id);
           }
@@ -185,6 +191,7 @@ export function validateChapter(chapter: Chapter): ChapterReport {
           // Con `when` no es seguro que se marque: no cuenta como ya marcada.
           for (const f of flagList(a.flag)) {
             flagsSet.add(f);
+            if (!simulate) continue;
             if (a.type === "set" && !a.when) flagsNow.add(f);
             else flagsNow.delete(f);
           }
@@ -252,6 +259,9 @@ export function validateChapter(chapter: Chapter): ChapterReport {
 
     runActions(step.onDone, `${where} (onDone)`);
   }
+
+  for (const a of chapter.actors)
+    if (Array.isArray(a.talk)) a.talk.forEach((c, i) => runActions(c.do, `Personaje «${a.id}», caso ${i + 1} de \`talk\` (do)`, false));
 
   // Los diálogos que se abren con el `next` de una respuesta también cuentan como usados.
   for (const id of [...usedDialogs]) for (const d of dialogChain(chapter.dialogs, id)) usedDialogs.add(d);

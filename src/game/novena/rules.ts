@@ -48,10 +48,13 @@ export function dialogChain(dialogs: Record<string, Line[]>, id: string): Set<st
 }
 
 /**
- * Banderas que puede marcar hablar con alguien en un caso: las del caso y las de cualquier
- * elección de su diálogo (o de los que siguen).
+ * Banderas que puede marcar hablar con alguien en un caso: las del caso, las de sus acciones `do`
+ * y las de cualquier elección de los diálogos que se abren (y de los que siguen).
  */
 export function caseSets(dialogs: Record<string, Line[]>, c: TalkCase): string[] {
-  const fromChoices = [...dialogChain(dialogs, c.dialog)].flatMap((d) => choicesOf(dialogs[d]).flatMap((ch) => flagList(ch.set)));
-  return [...flagList(c.set), ...fromChoices];
+  const actions = c.do ?? [];
+  const said = [c.dialog, ...actions.flatMap((a) => (a.type === "say" ? [a.dialog] : []))];
+  const fromChoices = said.flatMap((id) => [...dialogChain(dialogs, id)].flatMap((d) => choicesOf(dialogs[d]).flatMap((ch) => flagList(ch.set))));
+  const fromActions = actions.flatMap((a) => (a.type === "set" ? flagList(a.flag) : []));
+  return [...flagList(c.set), ...fromActions, ...fromChoices];
 }

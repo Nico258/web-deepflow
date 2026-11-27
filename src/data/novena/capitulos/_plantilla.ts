@@ -48,14 +48,29 @@ const chapter: Chapter = {
         { dialog: "vecina-otra-vez" },
       ],
     },
+    // Un objeto (`kind: "object"`) se toca igual que una persona. Este se recoge: marca la bandera
+    // y `do` lo oculta. Sin `talk`, un objeto es solo decoración (como la mesa).
+    {
+      id: "canasta",
+      name: "Canasta",
+      kind: "object",
+      at: [16, 6],
+      color: 0xc9a25a,
+      talk: [{ dialog: "canasta", set: "tiene-canasta", do: [{ type: "hide", actor: "canasta" }] }],
+    },
+    { id: "mesa", name: "Mesa", kind: "object", at: [6, 2], color: 0x7a5230 },
   ],
 
   steps: [
     { id: "intro", goal: { type: "auto" }, onStart: [{ type: "say", dialog: "intro" }] },
     { id: "hablar", objective: "Habla con el vecino", goal: { type: "talk", actor: "vecino" } },
-    // Meta `flags`: se cumple cuando están marcadas todas, en cualquier orden. Aquí hay una sola;
-    // con varias («toco-casa-1», «toco-casa-2»…), {n} y {total} muestran cuántas van.
-    { id: "saludar", objective: "Saluda a la vecina ({n}/{total})", goal: { type: "flags", all: ["saludo-vecina"] } },
+    // Meta `flags`: se cumple cuando están marcadas todas, en cualquier orden. {n} y {total}
+    // muestran cuántas van.
+    {
+      id: "saludar",
+      objective: "Saluda a la vecina y recoge la canasta ({n}/{total})",
+      goal: { type: "flags", all: ["saludo-vecina", "tiene-canasta"] },
+    },
     {
       id: "salir",
       objective: "Sal por el camino",
@@ -84,6 +99,7 @@ const chapter: Chapter = {
     "fiesta-no": [{ who: "vecino", text: "Bueno, otro día será." }],
     "camino-a-la-fiesta": [{ who: "narrator", text: "Y ahora, a la fiesta." }],
     vecina: [{ who: "vecina", text: "¡Qué gusto verte! Saluda a tu mamá de mi parte." }],
+    canasta: [{ who: "narrator", text: "Recoges la canasta. Huele a pan recién hecho." }],
     "vecina-otra-vez": [{ who: "vecina", text: "¿No se te olvida algo? Ah, no: ya me saludaste." }],
   },
 
