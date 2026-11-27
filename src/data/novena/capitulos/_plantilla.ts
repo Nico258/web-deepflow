@@ -8,8 +8,9 @@ import type { Chapter } from "@/game/novena/types";
 // 5. En src/data/novena/chapters.ts, agrega `load` al capítulo para que deje de salir como «Próximamente».
 // 6. Pruébalo con `pnpm dev` en /novena?cap=N (y &paso=id para empezar en un paso).
 //    Si hay errores en el guion, el validador los muestra en la consola del navegador.
-// 7. Corre `pnpm test:novena`: revisa el guion y recorre el capítulo de punta a punta
-//    en escritorio y en celular. No hay que escribir pruebas nuevas (spec 07 §3).
+// 7. Corre `pnpm test:novena` antes de subir el capítulo (y después de cualquier cambio):
+//    revisa el guion y lo recorre de punta a punta en escritorio y en celular. No corre solo
+//    con el build, y no hay que escribir pruebas nuevas (spec 07 §3).
 //
 // El capítulo 8 (08-pastores.ts) es el ejemplo completo.
 

@@ -15,6 +15,8 @@ Abre `http://localhost:3000`.
 
 Para compilar una versión de producción, ejecuta `pnpm build`; para servirla, ejecuta `pnpm start`.
 
+Si cambias algo de la novena «Camino a Belén» (`/novena`), corre también `pnpm test:novena` antes de subir el cambio: valida los capítulos y los recorre de punta a punta en escritorio y en celular. No se ejecuta solo con el build. La primera vez hay que instalar el navegador de las pruebas con `pnpm exec playwright install chromium`, o usar uno ya instalado con `PW_CHANNEL=msedge` (ver `docs/specs/07-novena-interactiva.md` §3).
+
 ## Estructura
 
 - `src/app`: rutas y estilos globales.
