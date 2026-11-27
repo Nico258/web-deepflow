@@ -1,6 +1,7 @@
 import * as Phaser from "phaser";
 import type { NovenaBus, ResolvedLine } from "./bus";
 import { DIRS, MAIN_MAP, SOLID, allMaps, inZone, manhattan, mapOf, same, toGrid } from "./map";
+import { prefersReducedMotion } from "./motion";
 import { caseSets, choicesOf, currentTalk, flagList, matches } from "./rules";
 import type { Action, Actor, Chapter, Choice, Exit, Flags, HerdConfig, Line, Lighting, Step, Tile } from "./types";
 
@@ -163,6 +164,11 @@ export class ChapterScene extends Phaser.Scene {
   private hintShown = false;
   /** El «!» de cada personaje que hace avanzar el paso (ver refreshAlerts). */
   private alerts = new Map<Person, Phaser.GameObjects.Container>();
+  /**
+   * «Reducir movimiento» del sistema: sin destellos, la cámara salta en vez de deslizarse y no hay
+   * rebotes ni brillos que laten (spec 07 §2).
+   */
+  private reduceMotion = prefersReducedMotion();
   /** Con quién se está hablando: mientras tanto no lleva «!». */
   private talkingWith: Person | null = null;
   /** Marca en la casilla adonde va el jugador después de tocar el mapa. */
@@ -311,7 +317,8 @@ export class ChapterScene extends Phaser.Scene {
         const glow = this.add.image(cx, cy, this.glowTexture()).setDepth(1001).setTint(0xffa040).setAlpha(0.32);
         glow.setDisplaySize(TILE * 8, TILE * 8).setBlendMode(Phaser.BlendModes.ADD);
         const base = glow.scale;
-        this.tweens.add({ targets: glow, alpha: 0.22, scale: base * 0.94, duration: 700, yoyo: true, repeat: -1, ease: "Sine.inOut" });
+        if (!this.reduceMotion)
+          this.tweens.add({ targets: glow, alpha: 0.22, scale: base * 0.94, duration: 700, yoyo: true, repeat: -1, ease: "Sine.inOut" });
         this.glows.push(glow);
       }),
     );
@@ -490,7 +497,7 @@ export class ChapterScene extends Phaser.Scene {
     const { x, y } = center(t);
     // Debajo de las figuras (que van de 10 en adelante): al llegar, el jugador la tapa.
     this.destMark = this.add.rectangle(x, y, TILE - 4, TILE - 4).setStrokeStyle(1.5, 0xfff1c4, 0.9).setDepth(9);
-    this.tweens.add({ targets: this.destMark, alpha: 0.35, duration: 500, yoyo: true, repeat: -1, ease: "Sine.inOut" });
+    if (!this.reduceMotion) this.tweens.add({ targets: this.destMark, alpha: 0.35, duration: 500, yoyo: true, repeat: -1, ease: "Sine.inOut" });
   }
 
   private hideDestination() {
@@ -685,6 +692,8 @@ export class ChapterScene extends Phaser.Scene {
         return;
       }
       case "flash": {
+        // Con «reducir movimiento» no hay destello (puede molestar): solo la pausa.
+        if (this.reduceMotion) return this.wait(300);
         const c = Phaser.Display.Color.IntegerToColor(a.color ?? 0xffffff);
         cam.flash(700, c.red, c.green, c.blue);
         return this.wait(700);
@@ -699,13 +708,19 @@ export class ChapterScene extends Phaser.Scene {
       case "pan": {
         cam.stopFollow();
         const { x, y } = center(a.to);
+        if (this.reduceMotion) {
+          cam.centerOn(x, y);
+          return this.wait(300);
+        }
         const ms = a.ms ?? 900;
         cam.pan(x, y, ms, "Sine.easeInOut");
         return this.wait(ms);
       }
       case "follow":
-        cam.pan(this.player.x, this.player.y, 600, "Sine.easeInOut");
-        await this.wait(600);
+        if (!this.reduceMotion) {
+          cam.pan(this.player.x, this.player.y, 600, "Sine.easeInOut");
+          await this.wait(600);
+        }
         cam.startFollow(this.player, true, 0.2, 0.2);
         return;
       case "wait":
@@ -724,6 +739,11 @@ export class ChapterScene extends Phaser.Scene {
       case "zoom": {
         this.zoomFactor = a.to;
         const target = this.baseZoom() * a.to;
+        if (this.reduceMotion) {
+          cam.setZoom(target);
+          this.fitBounds();
+          return;
+        }
         // Mientras cambia, los límites sirven para el zoom más alejado; al final se ajustan.
         this.fitBounds(Math.min(cam.zoom, target));
         const ms = a.ms ?? 900;
@@ -985,7 +1005,7 @@ export class ChapterScene extends Phaser.Scene {
         const herd = this.chapter.herd!;
         if (!s.penned && inZone(s.tile, herd.pen)) {
           s.penned = true;
-          this.tweens.add({ targets: s.view, y: s.view.y - 4, duration: 120, yoyo: true });
+          if (!this.reduceMotion) this.tweens.add({ targets: s.view, y: s.view.y - 4, duration: 120, yoyo: true });
           if (this.step?.goal.type === "herd") this.showObjective();
         }
         this.checkHerd();
@@ -1069,7 +1089,7 @@ export class ChapterScene extends Phaser.Scene {
         .setOrigin(0.5, 1)
         .setResolution(4);
       alert = this.add.container(0, 0, [mark]).setDepth(1003);
-      this.tweens.add({ targets: mark, y: -2, duration: 450, yoyo: true, repeat: -1, ease: "Sine.inOut" });
+      if (!this.reduceMotion) this.tweens.add({ targets: mark, y: -2, duration: 450, yoyo: true, repeat: -1, ease: "Sine.inOut" });
       this.alerts.set(p, alert);
     }
     this.placeAlerts();
@@ -1460,6 +1480,7 @@ export class ChapterScene extends Phaser.Scene {
     p.bob?.stop();
     const c = center(p.tile);
     p.view.y = c.y;
+    if (this.reduceMotion) return;
     p.bob = this.tweens.add({ targets: p.view, y: c.y - 3, duration: 1100, yoyo: true, repeat: -1, ease: "Sine.inOut" });
   }
 

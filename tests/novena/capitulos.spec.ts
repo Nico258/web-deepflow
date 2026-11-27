@@ -71,7 +71,7 @@ for (const info of playable) {
       if (await dialog.isVisible()) {
         const choices = dialog.locator(".nv-choice");
         if (await choices.count()) {
-          const question = (await dialog.locator("p").textContent()) ?? "";
+          const question = (await dialog.locator(".nv-dialog-text").textContent()) ?? "";
           const n = asked.get(question) ?? 0;
           asked.set(question, n + 1);
           const choice = choices.nth(n % (await choices.count()));

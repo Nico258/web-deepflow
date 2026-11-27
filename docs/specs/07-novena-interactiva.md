@@ -60,6 +60,10 @@ El capítulo ★ entra, pero **con prioridad baja y al final**.
   - Al tocar un punto del mapa, una **marca en la casilla de destino** se queda mientras el jugador camina hacia ella.
   - La **pista** (`hint`) del paso: se puede pedir desde el menú y aparece sola debajo del objetivo si el paso lleva más de un minuto sin cumplirse.
   - El objetivo se anuncia en una región viva fija (`role="status"`), así el lector de pantalla lee cada objetivo nuevo aunque la caja visible se oculte durante los diálogos.
+- **Diálogos:**
+  - El texto aparece letra por letra, con una pausa corta después de la puntuación (más larga tras `.`, `!`, `?` y `…`; más corta tras `,`, `;`, `:` y `—`), como al leer en voz alta.
+  - El lector de pantalla lee cada línea completa una vez, con quién la dice, no letra por letra. El foco va al botón ▼ («Siguiente», «Cerrar») o a la primera respuesta, así se avanza con el teclado o el lector sin buscar dónde.
+- **Reducir movimiento** (preferencia del sistema): el texto de los diálogos aparece de una vez, no hay destellos, la cámara salta en vez de deslizarse (`pan`, `follow`, `zoom`) y no rebotan ni laten los ángeles, el «!», la marca del destino ni las fogatas. Las animaciones de la interfaz se apagan con la regla general del sitio.
 - **Movimiento por casillas** de 16 px. Es más simple de programar y de diseñar, y basta para este juego.
 - **Zoom entero** según la pantalla (×2 en el celular, ×3 o más en el computador), para que el pixel art se vea nítido.
 - **Nada queda debajo de la barra y el objetivo de arriba.** React le avisa al juego cuánto ocupan, y la cámara deja ese espacio libre: cerca del borde superior del mapa se ve una franja oscura en vez de esconder al jugador o las primeras filas del mapa.
@@ -351,7 +355,7 @@ Programa una persona. El primer capítulo (el 8) queda como **molde** para que o
 **Primero funcional, después el arte.** Los capítulos se escriben y se prueban con cuadros de colores. El arte entra después en el motor (capa de dibujo y manifiesto de sprites), sin cambiar los guiones. Mientras tanto, el capítulo 8 se sigue puliendo como molde y el motor suma piezas en etapas pequeñas:
 
 1. Indicadores: «!» sobre quien tiene algo que decir, marca del destino al tocar, menú de pausa y pistas (`hint`) por paso. *(hecho)*
-2. Diálogos más accesibles (lector de pantalla, menos movimiento) y con pausas en la puntuación.
+2. Diálogos más accesibles (lector de pantalla, menos movimiento) y con pausas en la puntuación. *(hecho)*
 3. Escena de los ángeles del capítulo 8: acercar la cámara y luz.
 4. Motor: banderas, diálogos según banderas, elecciones, objetos, personajes que caminan o acompañan, acercar la cámara y varios mapas. *(hecho)*
 5. Arte: capa de dibujo, manifiesto de sprites y tamaño de casilla configurable. Después, mapas de Tiled (opcional).
