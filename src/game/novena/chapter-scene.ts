@@ -163,6 +163,8 @@ export class ChapterScene extends Phaser.Scene {
   private hintShown = false;
   /** El «!» de cada personaje que hace avanzar el paso (ver refreshAlerts). */
   private alerts = new Map<Person, Phaser.GameObjects.Container>();
+  /** Con quién se está hablando: mientras tanto no lleva «!». */
+  private talkingWith: Person | null = null;
   /** Marca en la casilla adonde va el jugador después de tocar el mapa. */
   private destMark?: Phaser.GameObjects.Rectangle;
 
@@ -600,13 +602,22 @@ export class ChapterScene extends Phaser.Scene {
     const talk = currentTalk(person.actor, this.step?.id, this.flags);
     if (!talk) return;
     this.faceTowards(person.tile);
+    // Al empezar a hablar, su «!» se va. Si al terminar sigue haciendo avanzar el paso (por
+    // ejemplo, se eligió una respuesta que no era), vuelve a aparecer.
+    this.talkingWith = person;
+    this.refreshAlerts();
     await this.progress(async () => {
-      await this.say(talk.dialog);
-      this.setFlags(talk.set, true);
-      this.setFlags(talk.unset, false);
-      if (talk.do) await this.run(talk.do);
+      try {
+        await this.say(talk.dialog);
+        this.setFlags(talk.set, true);
+        this.setFlags(talk.unset, false);
+        if (talk.do) await this.run(talk.do);
+      } finally {
+        this.talkingWith = null;
+      }
       const goal = this.step?.goal;
       if ((goal?.type === "talk" && goal.actor === person.actor.id) || this.flagsGoalMet()) await this.finishStep();
+      else this.refreshAlerts();
     });
   }
 
@@ -1042,6 +1053,7 @@ export class ChapterScene extends Phaser.Scene {
   /** Pone o quita el «!» encima de cada personaje según `talkTargets()`. */
   private refreshAlerts() {
     const targets = new Set(this.talkTargets());
+    if (this.talkingWith) targets.delete(this.talkingWith);
     for (const p of this.people.values()) {
       let alert = this.alerts.get(p);
       if (!targets.has(p)) {
