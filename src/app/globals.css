@@ -557,9 +557,21 @@ dialog.reto-avatar{max-width:520px}
 .nv-hud{position:absolute;top:0;left:0;right:0;display:flex;align-items:center;gap:12px;padding:max(10px,env(safe-area-inset-top)) 12px 10px;pointer-events:none}
 .nv-hud > *{pointer-events:auto}
 .nv-hud-title{font:600 15px var(--font-pixel),monospace;color:var(--nv-cream);text-shadow:0 2px 0 #000a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.nv-objective{position:absolute;top:calc(max(10px,env(safe-area-inset-top)) + 50px);left:50%;transform:translateX(-50%);margin:0;max-width:calc(100% - 24px);width:max-content;padding:8px 14px;background:#101a33e6;border:2px solid var(--nv-gold);border-radius:6px;color:var(--nv-cream);font:600 15px/1.3 var(--font-pixel),monospace;text-align:center;pointer-events:none;animation:nv-pop .3s ease-out}
+/* Debajo de la barra: el objetivo al centro y, debajo a la derecha, lo que lleva el jugador */
+.nv-top{position:absolute;top:calc(max(10px,env(safe-area-inset-top)) + 50px);left:12px;right:12px;display:flex;flex-direction:column;align-items:center;gap:8px;pointer-events:none}
+.nv-objective{margin:0;max-width:100%;width:max-content;padding:8px 14px;background:#101a33e6;border:2px solid var(--nv-gold);border-radius:6px;color:var(--nv-cream);font:600 15px/1.3 var(--font-pixel),monospace;text-align:center;pointer-events:none;animation:nv-pop .3s ease-out}
 .nv-objective span{color:var(--nv-gold)}
-@keyframes nv-pop{from{opacity:0;transform:translate(-50%,-6px)}}
+.nv-step-hint{display:flex;align-items:center;gap:6px;margin:-2px 0 0;max-width:100%;width:max-content;padding:6px 12px;background:#fff6dff2;color:#2a1d07;border:2px solid #2a1d07;border-radius:6px;font:500 14px/1.3 var(--font-pixel),monospace;animation:nv-pop .3s ease-out}
+.nv-step-hint svg{flex-shrink:0;color:#b07a10}
+/* Lo que lleva el jugador: a la derecha, debajo del objetivo; solo informativo */
+.nv-items{align-self:flex-end;display:flex;gap:6px;pointer-events:auto}
+.nv-item{display:grid;place-items:center;width:36px;height:36px;padding:0;background:#101a33e6;border:2px solid var(--nv-gold);border-radius:6px;cursor:pointer;animation:nv-item-in .35s ease-out}
+.nv-item span{width:16px;height:16px;border:2px solid #2a1d07;border-radius:2px}
+.nv-item[aria-expanded="true"],.nv-item:focus-visible{background:#2a3a63;outline:2px solid var(--nv-cream);outline-offset:1px}
+.nv-item-tip{position:absolute;top:calc(100% + 6px);right:0;max-width:min(300px,100%);pointer-events:auto;margin:0;padding:8px 12px;background:#fff6df;color:#2a1d07;border:2px solid #2a1d07;border-radius:6px;box-shadow:0 4px 0 #0008;font:500 14px/1.35 var(--font-pixel),monospace;z-index:2}
+.nv-item-tip:empty{display:none}
+@keyframes nv-item-in{0%{transform:scale(.4);opacity:0}70%{transform:scale(1.15)}}
+@keyframes nv-pop{from{opacity:0;transform:translateY(-6px)}}
 
 .nv-dialog-layer{position:absolute;inset:0;display:flex;align-items:flex-end;justify-content:center;padding:12px 12px max(14px,env(safe-area-inset-bottom));cursor:pointer}
 .nv-dialog{position:relative;width:min(720px,100%);background:#fff6df;color:#2a1d07;border:3px solid #2a1d07;border-radius:6px;box-shadow:0 0 0 3px #f2c35b,0 8px 0 #0008;padding:16px 18px 20px;animation:nv-rise .18s ease-out}
@@ -568,12 +580,19 @@ dialog.reto-avatar{max-width:520px}
 .nv-dialog-rest{visibility:hidden}
 .nv-dialog-speaker{position:absolute;top:-19px;left:12px;display:flex;align-items:center;gap:8px;background:#2a1d07;color:#fff6df;padding:4px 10px 4px 4px;border-radius:4px;font:700 15px var(--font-pixel),monospace}
 .nv-portrait{width:22px;height:22px;border-radius:3px;background:#8a6a3a;border:2px solid #fff6df}
-.nv-dialog-next{position:absolute;right:12px;bottom:6px;font-size:12px;opacity:0}
+.nv-dialog-next{position:absolute;right:6px;bottom:2px;padding:4px 6px;background:none;border:0;border-radius:4px;color:inherit;font-size:12px;line-height:1;opacity:0;cursor:pointer}
+.nv-dialog-next:focus-visible{opacity:1;outline:2px solid currentColor;outline-offset:1px}
 .nv-dialog-next.is-ready{opacity:1;animation:nv-bounce .8s ease-in-out infinite}
+.nv-choices{display:grid;gap:8px;margin-top:12px;cursor:default}
+.nv-choice{display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:10px 12px;min-height:44px;background:#fffdf5;color:#2a1d07;border:2px solid #2a1d07;border-radius:4px;font:600 16px/1.3 var(--font-pixel),monospace;cursor:pointer}
+.nv-choice span{display:inline-grid;place-items:center;min-width:22px;height:22px;border-radius:3px;background:#2a1d07;color:#fff6df;font-size:13px}
+.nv-choice:hover,.nv-choice:focus-visible{background:#f2c35b;outline:none}
+.nv-choice:focus-visible{box-shadow:0 0 0 3px #2a1d07}
+.nv-dialog--narrator .nv-choice{font-style:normal}
 @keyframes nv-rise{from{transform:translateY(12px);opacity:0}}
 @keyframes nv-bounce{50%{transform:translateY(3px)}}
 
-/* Ventanas del juego (<dialog> nativo, components/modal.tsx): cierre del capítulo y «¿Salir del capítulo?» */
+/* Ventanas del juego (<dialog> nativo, components/modal.tsx): cierre del capítulo y menú de pausa */
 dialog.nv-modal{width:min(560px,calc(100% - 32px));max-height:calc(100dvh - 32px);overflow:auto;margin:auto;overscroll-behavior:contain;background:var(--nv-night);border:3px solid var(--nv-gold);border-radius:8px;padding:24px 22px;color:var(--nv-cream);box-shadow:0 0 40px #f2c35b33}
 dialog.nv-modal[open]{display:grid;gap:14px}
 dialog.nv-modal::backdrop{background:#0b1020cc}
@@ -581,9 +600,15 @@ dialog.nv-modal::backdrop{background:#0b1020cc}
   dialog.nv-modal,dialog.nv-modal::backdrop{transition:opacity .35s ease-out}
   @starting-style{dialog.nv-modal[open],dialog.nv-modal[open]::backdrop{opacity:0}}
 }
-.nv-confirm{max-width:420px}
-.nv-confirm h2{margin:0;font:700 26px/1.15 var(--font-pixel),monospace}
-.nv-confirm p{margin:0;font-size:16px;line-height:1.5;color:#e9e2cf;text-wrap:pretty}
+.nv-menu{max-width:420px}
+.nv-menu h2{margin:0;font:700 26px/1.15 var(--font-pixel),monospace}
+.nv-menu-objective{margin:0;padding:10px 12px;border:2px solid var(--nv-gold);border-radius:6px;font:600 15px/1.35 var(--font-pixel),monospace}
+.nv-menu-objective span{color:var(--nv-gold)}
+.nv-menu-hint{display:flex;gap:8px;margin:0;padding:10px 12px;background:#fff6df;color:#2a1d07;border-radius:6px;font:500 15px/1.4 var(--font-pixel),monospace}
+.nv-menu-hint svg{flex-shrink:0;margin-top:2px;color:#b07a10}
+.nv-menu-hint-btn{justify-self:start}
+.nv-menu .nv-modal-actions{display:grid;gap:10px}
+.nv-menu-note{margin:0;font-size:14px;line-height:1.45;color:#9fb0cc;text-wrap:pretty}
 .nv-modal-actions{display:flex;flex-wrap:wrap;gap:10px}
 .nv-ending .nv-kicker{color:var(--nv-gold)}
 .nv-ending h2{margin:0;font:700 32px/1.1 var(--font-pixel),monospace}

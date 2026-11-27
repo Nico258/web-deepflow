@@ -9,9 +9,12 @@ import { validateChapter } from "@/game/novena/validate";
 //
 // 1. «El guion es válido»: corre el validador (sin navegador, en menos de un segundo).
 // 2. «Se juega de punta a punta»: abre el capítulo y lo recorre sin jugarlo de verdad.
-//    Cierra los diálogos al instante (con toques en el celular y con Enter en el computador),
-//    toca de verdad a la persona con quien hay que hablar y el resto de las metas las cumple
-//    con window.__novena.completeStep(): llega a la zona o mete las ovejas al corral de una vez.
+//    Cierra los diálogos al instante (con toques en el celular y con Enter en el computador).
+//    Si un diálogo pide elegir, la primera vez elige la primera respuesta, la segunda vez la
+//    segunda, etc. (así, si una respuesta vuelve a preguntar, prueba con la siguiente).
+//    En cada paso, toca de verdad a la persona con quien hay que hablar (en `flags`, a quien marca una bandera
+//    que falta) y el resto de las metas las cumple con window.__novena.completeStep(): llega a la
+//    zona o mete las ovejas al corral de una vez.
 //    Termina cuando aparece el cierre con el versículo.
 //
 // Correr: `pnpm test:novena` (ver playwright.config.ts para elegir el navegador).
@@ -59,26 +62,42 @@ for (const info of playable) {
     const dialog = page.locator(".nv-dialog-layer");
     let steps = 0;
     let exitChecked = false;
+    /** Cuántas veces apareció cada pregunta, para ir probando sus respuestas en orden. */
+    const asked = new Map<string, number>();
 
     while (!(await ending.isVisible())) {
       expect(Date.now() < deadline, `${label} no llegó al cierre (paso: ${await currentStep(page)})`).toBe(true);
 
       if (await dialog.isVisible()) {
+        const choices = dialog.locator(".nv-choice");
+        if (await choices.count()) {
+          const question = (await dialog.locator(".nv-dialog-text").textContent()) ?? "";
+          const n = asked.get(question) ?? 0;
+          asked.set(question, n + 1);
+          const choice = choices.nth(n % (await choices.count()));
+          if (mobile) await choice.tap();
+          else {
+            await choice.focus();
+            await page.keyboard.press("Enter");
+          }
+          continue;
+        }
         if (mobile) await dialog.tap();
         else await page.keyboard.press("Enter");
         continue;
       }
 
-      // Una vez por capítulo: «Mapa» a mitad del juego pregunta antes de salir, y se puede seguir jugando.
+      // Una vez por capítulo: «Menú» a mitad del juego abre la pausa, y se puede seguir jugando.
       if (!exitChecked) {
         exitChecked = true;
-        const mapButton = page.getByRole("button", { name: "Mapa" });
-        if (mobile) await mapButton.tap();
-        else await mapButton.click();
-        const confirm = page.getByRole("dialog", { name: "¿Salir del capítulo?" });
-        await expect(confirm).toBeVisible();
-        await confirm.getByRole("button", { name: "Seguir jugando" }).click();
-        await expect(confirm).toBeHidden();
+        const menuButton = page.getByRole("button", { name: "Menú" });
+        if (mobile) await menuButton.tap();
+        else await menuButton.click();
+        const menu = page.getByRole("dialog", { name: "Pausa" });
+        await expect(menu).toBeVisible();
+        await expect(menu.getByRole("button", { name: "Salir al mapa" })).toBeVisible();
+        await menu.getByRole("button", { name: "Seguir jugando" }).click();
+        await expect(menu).toBeHidden();
         continue;
       }
 
