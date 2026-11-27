@@ -80,7 +80,9 @@ const chapter: Chapter = {
       [12, 12],
       [12, 13],
     ],
-    fleeRadius: 2,
+    fleeRadius: 3,
+    // Si a los 90 segundos faltan ovejas, empiezan a volver solas (ver HerdConfig en types.ts).
+    helpDialog: "ovejas-ayuda",
   },
 
   steps: [
@@ -150,6 +152,10 @@ const chapter: Chapter = {
       { who: "tamar", text: "¿Cinco ovejas? Ay, primo, ¿no que eras el mejor pastor de Belén?" },
       { who: "player", text: "Yo nunca dije eso." },
       { who: "tamar", text: "Lo dijo tu mamá. En todo el mercado." },
+    ],
+    "ovejas-ayuda": [
+      { who: "narrator", text: "En el corral, las ovejas que ya volvieron empiezan a balar." },
+      { who: "narrator", text: "Las que faltan las escuchan y, poco a poco, empiezan a volver solas. Ayúdalas a llegar." },
     ],
     "corral-listo": [
       { who: "narrator", text: "La puerta del corral se cierra. Todas las ovejas están a salvo." },

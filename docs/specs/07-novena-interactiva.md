@@ -52,7 +52,7 @@ El capítulo ★ entra, pero **con prioridad baja y al final**.
   - Se comunican por un bus de eventos pequeño (`src/game/novena/bus.ts`).
 - **Phaser se carga solo en el navegador** (`import()` dinámico dentro de un `useEffect`), porque no funciona en el servidor.
 - **Controles:**
-  - En el celular: **tocar para caminar**. Se toca un punto y el personaje va hasta allá; si se toca a alguien, camina hasta su lado y le habla.
+  - En el celular: **tocar para caminar**. Se toca un punto y el personaje va hasta allá; si se toca a alguien, camina hasta su lado y le habla. **Mantener el dedo** hace que camine hacia él mientras no se suelte (sirve para arrear ovejas).
   - En el computador: flechas o WASD para caminar, y Espacio, Enter o E para hablar.
 - **Movimiento por casillas** de 16 px. Es más simple de programar y de diseñar, y basta para este juego.
 - **Zoom entero** según la pantalla (×2 en el celular, ×3 o más en el computador), para que el pixel art se vea nítido.
@@ -90,6 +90,23 @@ Un capítulo tiene:
 ### Acciones (en `onStart` y `onDone`)
 
 `say` (abre un diálogo), `show` / `hide` (aparece o desaparece un personaje), `flash` (destello de luz), `lighting` (cambia la luz: `day`, `night`, `glory`), `pan` / `follow` (mueve la cámara a un punto y vuelve al jugador), `wait` (pausa) y `sfx` (efecto de sonido).
+
+### Reunir ovejas (`herd`)
+
+Las ovejas huyen del jugador: hay que ponerse detrás de ellas para empujarlas hacia la puerta del corral. Cuando todas están adentro y el jugador sale, la puerta se cierra. Mientras faltan ovejas, unas flechas en el borde de la pantalla apuntan a las que no se ven.
+
+| Campo | Qué es |
+|---|---|
+| `sheep` | Casilla de inicio de cada oveja |
+| `pen` | Interior del corral (zona) |
+| `gate` | Casillas de la puerta: deben ser `g` en el mapa |
+| `fleeRadius` | A cuántas casillas del jugador se asustan. Recomendado: 3 |
+| `paceMs` | (Opcional) cada cuántos ms decide una oveja si da un paso. Más alto, más lentas. Por defecto 320 |
+| `homing` | (Opcional) de 0 a 1: cuánto tienden a volver al corral, al huir y cuando están tranquilas. Por defecto 0,4 |
+| `helpAfterMs` | (Opcional) pasado este tiempo, las que faltan dejan de huir y vuelven solas, despacio. Por defecto 90 000 (1,5 min); 0 la desactiva |
+| `helpDialog` | (Opcional) diálogo que se abre una vez cuando empieza la ayuda |
+
+Al huir, una oveja prefiere alejarse en línea recta, evita pegarse a muros y cercas (si no, se desliza por el borde hasta una esquina) y, entre caminos parecidos, elige el lado del corral. La ayuda existe para que nadie se quede trabado: es un juego para acompañar la novena, no para frustrarse.
 
 Para un momento jugable nuevo (cargar el burro, tocar puertas…), primero hay que preguntarse si se arma con estas piezas. Si no, se agrega una meta nueva al motor, como se hizo con `herd`, para que quede disponible para los demás capítulos.
 

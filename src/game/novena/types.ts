@@ -54,6 +54,10 @@ export type Actor = {
   talk?: Record<string, string>;
 };
 
+/**
+ * Minijuego de reunir ovejas (meta `herd`). Las ovejas huyen del jugador: hay que ponerse
+ * detrás de ellas para empujarlas hacia la puerta del corral. Ver spec 07 §3.
+ */
 export type HerdConfig = {
   /** Dónde empieza cada oveja. */
   sheep: Tile[];
@@ -61,8 +65,22 @@ export type HerdConfig = {
   pen: Zone;
   /** Casillas de la puerta, que pasan a ser cerca al cerrar. */
   gate: Tile[];
-  /** A cuántas casillas del jugador se asustan y se alejan. */
+  /** A cuántas casillas del jugador (contando en línea recta, sin diagonales) se asustan y se alejan. Recomendado: 3. */
   fleeRadius: number;
+  /** Cada cuántos milisegundos decide una oveja si da un paso. Más alto, más lentas. Por defecto 320. */
+  paceMs?: number;
+  /**
+   * De 0 a 1: cuánto prefieren huir hacia el corral cuando tienen dos caminos parecidos.
+   * Con 0 solo huyen del jugador; con 1 casi siempre eligen el lado del corral. Por defecto 0,4.
+   */
+  homing?: number;
+  /**
+   * Ayuda para que nadie se quede trabado: pasado este tiempo en el paso `herd`, las ovejas que faltan
+   * empiezan a volver solas al corral, despacio. En milisegundos; 0 la desactiva. Por defecto 90000 (1,5 min).
+   */
+  helpAfterMs?: number;
+  /** Diálogo que se abre una vez cuando empieza la ayuda, para contar qué pasa. */
+  helpDialog?: string;
 };
 
 export type Chapter = {

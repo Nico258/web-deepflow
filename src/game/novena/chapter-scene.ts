@@ -13,7 +13,14 @@ import type { Action, Actor, Chapter, Lighting, Step, Tile } from "./types";
 export const TILE = 16;
 const STEP_MS = 150;
 const SHEEP_STEP_MS = 220;
-const SHEEP_TICK_MS = 300;
+/** Valores por defecto de los campos opcionales de `herd` (ver HerdConfig en types.ts). */
+const HERD_DEFAULTS = { paceMs: 320, homing: 0.4, helpAfterMs: 90_000 };
+/** Con la ayuda activa, probabilidad de que una oveja tranquila dé un paso hacia el corral en cada turno. */
+const HELP_STEP_CHANCE = 0.35;
+/** Sin ayuda, una oveja tranquila da un paso hacia el corral con probabilidad `homing` × esto en cada turno. */
+const CALM_HOME_CHANCE = 0.3;
+/** Cuánto hay que mantener el dedo (o el clic) para caminar hacia él en vez de ir a un punto. */
+const HOLD_MS = 220;
 
 const GROUND: Record<string, number> = { ",": 0xb89c6a, g: 0xb89c6a, _: 0xa9a294, "#": 0x77736c, "~": 0x3f73a6 };
 const GRASS = 0x6f9a4f;
@@ -104,6 +111,14 @@ export class ChapterScene extends Phaser.Scene {
   private people = new Map<string, Person>();
   private sheep: Sheep[] = [];
   private gateClosed = false;
+  /** Flechas en el borde de la pantalla hacia las ovejas que no se ven. */
+  private sheepArrows: Phaser.GameObjects.Triangle[] = [];
+  /** Distancia de cada casilla al corral, caminando como oveja. */
+  private penDistance: (t: Tile) => number = () => 0;
+  private herdStartedAt = 0;
+  private herdHelping = false;
+  /** El dedo (o el mouse) que se mantiene apretado para caminar hacia él. */
+  private hold: { pointer: Phaser.Input.Pointer; since: number } | null = null;
 
   private stepIndex = -1;
   /** Mientras hay diálogo o escena, el jugador no se mueve. */
@@ -155,7 +170,10 @@ export class ChapterScene extends Phaser.Scene {
       const s: Sheep = { tile: [...at], view: this.makeFigure(0xf4f1e8, "sheep"), penned: false, moving: false };
       this.place(s.view, s.tile);
       this.sheep.push(s);
+      const arrow = this.add.triangle(0, 0, 0, -6, 11, 0, 0, 6, 0xf4f1e8).setStrokeStyle(2, 0x10182c).setDepth(1004).setVisible(false);
+      this.sheepArrows.push(arrow);
     }
+    if (this.chapter.herd) this.penDistance = this.measurePenDistance();
 
     // Luz: una capa de color encima del mapa, y un brillo sobre cada fogata.
     const light = LIGHT[this.chapter.map.lighting];
@@ -196,7 +214,8 @@ export class ChapterScene extends Phaser.Scene {
       });
     }
 
-    if (this.chapter.herd) this.time.addEvent({ delay: SHEEP_TICK_MS, loop: true, callback: this.sheepTick, callbackScope: this });
+    const herd = this.chapter.herd;
+    if (herd) this.time.addEvent({ delay: herd.paceMs ?? HERD_DEFAULTS.paceMs, loop: true, callback: this.sheepTick, callbackScope: this });
 
     // Atajo de desarrollo: empezar en un paso dando por hechos los anteriores.
     let start = 0;
@@ -235,11 +254,16 @@ export class ChapterScene extends Phaser.Scene {
     kb.on("keydown-ENTER", interact);
     kb.on("keydown-E", interact);
 
+    // Tocar un punto lleva hasta ahí; mantener el dedo camina hacia él mientras no se suelte
+    // (sirve para arrear ovejas en el celular).
+    const release = () => (this.hold = null);
+    this.input.on("pointerup", release);
+    this.input.on("pointerupoutside", release);
     this.input.on("pointerdown", (p: Phaser.Input.Pointer) => {
       if (this.busy) return;
-      const w = this.cameras.main.getWorldPoint(p.x, p.y);
-      const tile: Tile = [Math.floor(w.x / TILE), Math.floor(w.y / TILE)];
+      const tile = this.pointerTile(p);
       const person = this.personAt(tile, true);
+      this.hold = person ? null : { pointer: p, since: this.time.now };
       if (person) {
         const goals = DIRS.map(([dx, dy]): Tile => [person.tile[0] + dx, person.tile[1] + dy]).filter((t) => this.walkable(t));
         if (goals.some((g) => same(g, this.playerTile))) this.clearPath();
@@ -265,6 +289,7 @@ export class ChapterScene extends Phaser.Scene {
   // ───────── Bucle ─────────
 
   update() {
+    this.updateSheepArrows();
     if (this.busy || this.moving) return;
     const k = this.keys;
     const held: Tile | null =
@@ -273,6 +298,11 @@ export class ChapterScene extends Phaser.Scene {
     if (held) {
       this.clearPath();
       this.tryStep(held);
+      return;
+    }
+    if (this.hold?.pointer.isDown && this.time.now - this.hold.since >= HOLD_MS) {
+      this.clearPath();
+      this.stepTowards(this.pointerTile(this.hold.pointer));
       return;
     }
     const next = this.path.shift();
@@ -290,6 +320,22 @@ export class ChapterScene extends Phaser.Scene {
       this.pendingTalk = null;
       if (manhattan(target.tile, this.playerTile) === 1) void this.talkTo(target);
     }
+  }
+
+  private pointerTile(p: Phaser.Input.Pointer): Tile {
+    const w = this.cameras.main.getWorldPoint(p.x, p.y);
+    return [Math.floor(w.x / TILE), Math.floor(w.y / TILE)];
+  }
+
+  /** Un paso hacia una casilla: primero por el eje más largo y, si está cerrado, por el otro. */
+  private stepTowards(target: Tile) {
+    const dx = target[0] - this.playerTile[0];
+    const dy = target[1] - this.playerTile[1];
+    if (!dx && !dy) return;
+    const horizontal: Tile = [Math.sign(dx), 0];
+    const vertical: Tile = [0, Math.sign(dy)];
+    const [first, second] = Math.abs(dx) >= Math.abs(dy) ? [horizontal, vertical] : [vertical, horizontal];
+    if (!this.tryStep(first) && (second[0] || second[1])) this.tryStep(second);
   }
 
   private clearPath() {
@@ -351,6 +397,10 @@ export class ChapterScene extends Phaser.Scene {
       return;
     }
     this.showObjective();
+    if (step.goal.type === "herd") {
+      this.herdStartedAt = this.time.now;
+      this.herdHelping = false;
+    }
     if (step.onStart) await this.run(step.onStart);
     const goal = step.goal;
     if (goal.type === "auto" || (goal.type === "reach" && inZone(this.playerTile, goal.zone))) return this.finishStep();
@@ -479,32 +529,123 @@ export class ChapterScene extends Phaser.Scene {
 
   // ───────── Ovejas ─────────
 
+  // Cómo se mueve una oveja en cada turno (cada `paceMs`):
+  // - Si el jugador está a `fleeRadius` casillas o menos, huye. Prefiere alejarse en línea recta (así,
+  //   empujarla desde atrás la lleva hacia adelante), evita pegarse a muros y cercas (si no, se desliza
+  //   por el borde hasta una esquina) y, entre caminos parecidos, elige el lado del corral (`homing`).
+  // - Si está tranquila (el jugador lejos), camina despacio de vuelta al rebaño (`homing`) y a veces
+  //   da un paso al azar. Así, alejarse un poco deja que una oveja salga sola de un rincón.
+  // - Con la ayuda activa (`helpAfterMs`), las que faltan ya no huyen: caminan solas hacia el corral,
+  //   aunque el jugador las siga. Así nadie se queda trabado con una oveja en un rincón.
+  // - Las que ya están en el corral se quedan adentro.
   private sheepTick() {
     const herd = this.chapter.herd;
     if (!herd || this.busy) return;
+    const herding = this.step?.goal.type === "herd";
+    const helpAfter = herd.helpAfterMs ?? HERD_DEFAULTS.helpAfterMs;
+    if (herding && !this.herdHelping && helpAfter > 0 && this.time.now - this.herdStartedAt >= helpAfter) {
+      this.herdHelping = true;
+      if (herd.helpDialog) {
+        void this.progress(() => this.say(herd.helpDialog!));
+        return;
+      }
+    }
+    const homing = herd.homing ?? HERD_DEFAULTS.homing;
     for (const s of this.sheep) {
       if (s.moving) continue;
-      const dist = manhattan(s.tile, this.playerTile);
       const options = DIRS.map(([dx, dy]): Tile => [s.tile[0] + dx, s.tile[1] + dy]).filter(
         (t) => this.sheepCanGo(t) && (!s.penned || inZone(t, herd.pen)),
       );
       if (!options.length) continue;
+      const homeward = s.penned ? [] : options.filter((t) => this.penDistance(t) < this.penDistance(s.tile));
       let choice: Tile | undefined;
-      if (dist <= herd.fleeRadius) {
-        // Se aleja lo más en línea recta posible: así, empujarla desde atrás la lleva hacia adelante.
-        const [px, py] = this.playerTile;
-        const d2 = (t: Tile) => (t[0] - px) ** 2 + (t[1] - py) ** 2;
-        const now = d2(s.tile);
-        const farther = options.filter((t) => d2(t) > now);
-        const best = Math.max(...farther.map(d2));
-        if (farther.length) choice = Phaser.Utils.Array.GetRandom(farther.filter((t) => d2(t) === best));
-        // Acorralada contra una esquina: se escabulle por donde pueda, para que nunca quede trabada.
-        else if (dist <= 1) choice = Phaser.Utils.Array.GetRandom(options);
-      } else if (Math.random() < 0.06) {
-        choice = Phaser.Utils.Array.GetRandom(options);
+      if (this.herdHelping && herding && !s.penned) {
+        // Si el jugador (u otra oveja) tapa el camino, lo rodea por un costado.
+        const around = options.filter((t) => this.penDistance(t) === this.penDistance(s.tile));
+        const way = homeward.length ? homeward : around.length ? around : options;
+        if (way.length && Math.random() < HELP_STEP_CHANCE) choice = Phaser.Utils.Array.GetRandom(way);
+      } else if (manhattan(s.tile, this.playerTile) <= herd.fleeRadius) choice = this.fleeChoice(s, options, homing);
+      else if (homeward.length && Math.random() < homing * CALM_HOME_CHANCE) choice = Phaser.Utils.Array.GetRandom(homeward);
+      else if (Math.random() < 0.06) {
+        choice = Phaser.Utils.Array.GetRandom(homeward.length && Math.random() < homing ? homeward : options);
       }
       if (choice) this.moveSheep(s, choice);
     }
+  }
+
+  private fleeChoice(s: Sheep, options: Tile[], homing: number): Tile | undefined {
+    const [px, py] = this.playerTile;
+    const d2 = (t: Tile) => (t[0] - px) ** 2 + (t[1] - py) ** 2;
+    const now = d2(s.tile);
+    // Cuántos lados de la casilla están cerrados (muro, árbol, cerca…).
+    const walls = (t: Tile) => DIRS.filter(([dx, dy]) => SOLID.has(this.tileAt([t[0] + dx, t[1] + dy]))).length;
+    const home = this.penDistance(s.tile);
+    const score = (t: Tile) => {
+      const towardPen = s.penned ? 0 : Math.sign(home - this.penDistance(t));
+      return d2(t) - now - 1.5 * walls(t) + 3 * homing * towardPen;
+    };
+    const pick = (tiles: Tile[]) => {
+      if (!tiles.length) return undefined;
+      const best = Math.max(...tiles.map(score));
+      return Phaser.Utils.Array.GetRandom(tiles.filter((t) => score(t) === best));
+    };
+    // Nunca hacia el jugador…
+    const away = options.filter((t) => d2(t) > now);
+    if (away.length) return pick(away);
+    // …salvo que esté acorralada y el jugador encima: entonces se escabulle por el lado más abierto.
+    return manhattan(s.tile, this.playerTile) <= 1 ? pick(options) : undefined;
+  }
+
+  /** Distancia de cada casilla al corral caminando (con la puerta abierta), para la tendencia a volver. */
+  private measurePenDistance() {
+    const pen = this.chapter.herd!.pen;
+    const width = this.grid[0]?.length ?? 0;
+    const key = (t: Tile) => t[1] * width + t[0];
+    const dist = new Map<number, number>();
+    const queue: Tile[] = [];
+    for (let x = pen.x; x < pen.x + pen.w; x++)
+      for (let y = pen.y; y < pen.y + pen.h; y++) {
+        dist.set(key([x, y]), 0);
+        queue.push([x, y]);
+      }
+    while (queue.length) {
+      const cur = queue.shift()!;
+      for (const [dx, dy] of DIRS) {
+        const n: Tile = [cur[0] + dx, cur[1] + dy];
+        if (dist.has(key(n)) || SOLID.has(this.tileAt(n)) || n[0] < 0 || n[1] < 0 || n[0] >= width) continue;
+        dist.set(key(n), dist.get(key(cur))! + 1);
+        queue.push(n);
+      }
+    }
+    return (t: Tile) => dist.get(key(t)) ?? Infinity;
+  }
+
+  /** Flechas en el borde de la pantalla que apuntan a las ovejas que faltan y no se ven. */
+  private updateSheepArrows() {
+    if (!this.sheepArrows.length) return;
+    const show = this.step?.goal.type === "herd" && !this.busy;
+    const cam = this.cameras.main;
+    const view = cam.worldView;
+    // Márgenes en píxeles de pantalla, pasados al mundo: arriba se deja lugar a la barra y al objetivo.
+    const top = 120 / cam.zoom;
+    const side = 18 / cam.zoom;
+    this.sheep.forEach((s, i) => {
+      const arrow = this.sheepArrows[i];
+      const { x, y } = s.view;
+      const visible = x >= view.x && x <= view.right && y >= view.y + top * 0.6 && y <= view.bottom;
+      if (!show || s.penned || visible) {
+        arrow.setVisible(false);
+        return;
+      }
+      const ax = Phaser.Math.Clamp(x, view.x + side, view.right - side);
+      const ay = Phaser.Math.Clamp(y, view.y + top, view.bottom - side);
+      arrow
+        .setVisible(true)
+        .setPosition(ax, ay)
+        .setRotation(Math.atan2(y - ay, x - ax))
+        .setScale(1 / cam.zoom)
+        .setAlpha(0.75 + 0.25 * Math.sin(this.time.now / 200));
+    });
   }
 
   private moveSheep(s: Sheep, to: Tile) {
